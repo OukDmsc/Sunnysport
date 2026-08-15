@@ -17,9 +17,8 @@ function getItemImage(item) {
   const localFileCandidates = ITEM_IMAGE_EXTENSIONS.map((extension) => buildLocalImageUrl(item.id, extension));
   return localFileCandidates[0] || DEFAULT_ITEM_IMAGE;
 }
-
 const items = [
- { id: 1, name: "ទា1.1", price: 58000, stock: 1000, image: "https://i.postimg.cc/hjmQ9Z77/duck.jpg" },
+  { id: 1, name: "ទា1.1", price: 58000, stock: 1000, image: "https://i.postimg.cc/hjmQ9Z77/duck.jpg" },
   { id: 2, name: "ត្រីមូល", price: 6500, stock: 1000, image: "https://i.postimg.cc/5NzQzQzQ/tri-mool.jpg" },
   { id: 3, name: "ត្រីឆ្លាត", price: 6000, stock: 1000, image: "https://i.postimg.cc/5NzQzQzQ/tri-chlat.jpg" },
   { id: 4, name: "គូទមាន់", price: 6500, stock: 1000, image: "https://i.postimg.cc/TYSsxdV6/photo-2026-07-22-10-08-21.jpg" },
@@ -27,9 +26,9 @@ const items = [
   { id: 6, name: "ស្លាបខ្លី", price: 14000, stock: 1000, image: "https://i.postimg.cc/mg6SjqhP/slab-cley.jpg" },
   { id: 7, name: "កោះមាន់", price: 9500, stock: 1000, image: "https://i.postimg.cc/nV7wzHMf/kors-chickhen.jpg" },
   { id: 8, name: "ភ្លៅមាន់", price: 10500, stock: 1000, image: "https://i.postimg.cc/wxVLFPGR/plov-mean.jpg" },
-  { id: 9, name: "ជើងមាន់Aviva", price: 7800, stock: 1000, image: DEFAULT_ITEM_IMAGE },
+  { id: 9, name: "ជើងមាន់Aviva", price: 8000, stock: 1000, image: DEFAULT_ITEM_IMAGE },
   { id: 10, name: "ត្រីបន្ទះ", price: 13500, stock: 1000, image: "https://i.postimg.cc/tCWJtMvp/fish.jpg" },
-  { id: 11, name: "នំឈីស", price: 15000, stock: 1000, image: "https://i.postimg.cc/V6kHvMSB/nom-chise.jpg" },
+  { id: 11, name: "នំឈីស", price: 14500, stock: 1000, image: "https://i.postimg.cc/V6kHvMSB/nom-chise.jpg" },
   { id: 12, name: "មីសួរដើម", price: 11500, stock: 1000, image: DEFAULT_ITEM_IMAGE },
   { id: 13, name: "មីសួរដើមតូច", price: 13000, stock: 1000, image: DEFAULT_ITEM_IMAGE },
   { id: 14, name: "គ្រាប់ខ្នុល", price: 14000, stock: 1000, image: DEFAULT_ITEM_IMAGE },
@@ -39,41 +38,55 @@ const items = [
   { id: 18, name: "អណ្ដាត", price: 12500, stock: 1000, image: "https://i.postimg.cc/QNTxdWpZ/orn-dard.jpg" },
   { id: 19, name: "ប្រហិតបង្គា", price: 14500, stock: 1000, image: DEFAULT_ITEM_IMAGE },
   { id: 20, name: "ក្ដាមធំ១២ដើម", price: 14500, stock: 1000, image: DEFAULT_ITEM_IMAGE },
-  { id: 21, name: "តៅហ៊ូជ្រុង", price: 12000, stock: 1000, image: DEFAULT_ITEM_IMAGE },
-  { id: 22, name: "គាវ", price: 112000, stock: 1000, image: "https://i.postimg.cc/G2VMCzYw/photo-2026-07-31-20-06-42.jpg" },
+  { id: 21, name: "តៅហ៊ូជ្រុង", price: 12500, stock: 1000, image: DEFAULT_ITEM_IMAGE },
+  { id: 22, name: "គាវ", price: 10500, stock: 1000, image: "https://i.postimg.cc/G2VMCzYw/photo-2026-07-31-20-06-42.jpg" },
   { id: 23, name: "ចាំបូមាស", price: 11000, stock: 1000, image: DEFAULT_ITEM_IMAGE },
   { id: 24, name: "ប៉ាតេក្ដាម", price: 9000, stock: 1000, image: DEFAULT_ITEM_IMAGE },
   { id: 25, name: "សាច់ក្រក់ធំ", price: 11500, stock: 1000, image: DEFAULT_ITEM_IMAGE },
   { id: 26, name: "chojoមឺកខ្លី", price: 14000, stock: 1000, image: DEFAULT_ITEM_IMAGE },
   { id: 27, name: "កន្សោមពង", price: 15000, stock: 1000, image: DEFAULT_ITEM_IMAGE },
-  { id: 28, name: "chojoមឺកក្រហម", price: 13500, stock: 1000, image: DEFAULT_ITEM_IMAGE },
+  { id: 28, name: "chojoមឺកក្រហម", price: 14500, stock: 1000, image: DEFAULT_ITEM_IMAGE },
   { id: 29, name: "ឈីសតូច21ដើម", price: 14500, stock: 1000, image: DEFAULT_ITEM_IMAGE },
   { id: 31, name: "ឈីសធំ26ដើម", price: 14500, stock: 1000, image: DEFAULT_ITEM_IMAGE },
   { id: 32, name: "'ដកpm", price: 12000, stock: 1000, image: DEFAULT_ITEM_IMAGE },
   { id: 33, name: "ត្រចៀក", price: 12500, stock: 1000, image: "https://i.postimg.cc/Qx9xNyZp/slik.jpg" },
   { id: 34, name: "ក្បាលពោះវៀន", price: 10000, stock: 1000, image: DEFAULT_ITEM_IMAGE },
-  { id: 35, name: "CP16", price: 11500, stock: 1000, image: DEFAULT_ITEM_IMAGE },
+  { id: 35, name: "CP16", price: 9000, stock: 1000, image: DEFAULT_ITEM_IMAGE },
   { id: 36, name: "CP40", price: 11500, stock: 1000, image: DEFAULT_ITEM_IMAGE },
   { id: 37, name: "ត្រីHP", price: 10500, stock: 1000, image: DEFAULT_ITEM_IMAGE },
   { id: 38, name: "ត្រីបន្លែ", price: 10500, stock: 1000, image: DEFAULT_ITEM_IMAGE },
   { id: 39, name: "តៅហ៊ូចៀន", price: 13500, stock: 1000, image: DEFAULT_ITEM_IMAGE },
   { id: 40, name: "បង្គា", price: 14500, stock: 1000, image: DEFAULT_ITEM_IMAGE },
   { id: 41, name: "ចាំបូ20", price: 11000, stock: 1000, image: DEFAULT_ITEM_IMAGE },
-  { id: 42, name: "គោលេច4", price: 111111, stock: 1000, image: DEFAULT_ITEM_IMAGE },
+  { id: 42, name: "មីសួរគ្រាប់ធំ", price: 11500, stock: 1000, image: DEFAULT_ITEM_IMAGE },
   { id: 43, name: "ជើងជ្រូកមូល", price: 11000, stock: 1000, image: DEFAULT_ITEM_IMAGE },
   { id: 44, name: "ត្រីស", price: 10000, stock: 1000, image: "https://i.postimg.cc/NfpgkHvP/photo-1-2026-07-29-11-27-40.jpg" },
   { id: 45, name: "បន្លែពណ៏", price: 10500, stock: 1000, image: DEFAULT_ITEM_IMAGE },
   { id: 46, name: "បន្លែស្លឹកខ្ទឹម", price: 10000, stock: 1000, image: DEFAULT_ITEM_IMAGE },
   { id: 47, name: "ជើងទាខ", price: 9800, stock: 1000, image: "https://i.postimg.cc/L8sd6q1r/jerng-duck.jpg" },
   { id: 48, name: "ដក AM", price: 11500, stock: 1000, image: DEFAULT_ITEM_IMAGE },
-  { id: 49, name: "ដក PM", price: 11500, stock: 1000, image: DEFAULT_ITEM_IMAGE },
+  { id: 49, name: "ដកមីសួរ", price: 11500, stock: 1000, image: DEFAULT_ITEM_IMAGE },
   { id: 50, name: "ប៉ាទេ cp", price: 11600, stock: 1000, image: DEFAULT_ITEM_IMAGE },
-  { id: 51, name: "ជើង P83", price: 7500, stock: 1000, image: "https://i.postimg.cc/cJbdNRkD/jerng.jpg" },
-  { id: 52, name: "ជើងមាន់អត់ឆ្អឹង", price: 15500, stock: 1000, image: "https://i.postimg.cc/VkTVv5q7/jerng-mean-ot-c.jpg" }
-];
+  { id: 51, name: "ជើង P83", price: 7800, stock: 1000, image: "https://i.postimg.cc/cJbdNRkD/jerng.jpg" },
+  { id: 52, name: "ជើងវែង", price: 11000, stock: 1000, image: "https://i.postimg.cc/VkTVv5q7/jerng-mean-ot-c.jpg" },
+  { id: 53, name: "សណ្ដែក", price: 1600, stock: 1000, image: "https://i.postimg.cc/VkTVv5q7/jerng-mean-ot-c.jpg" },
+  { id: 54, name: "គុយទាវ", price: 4300, stock: 1000, image: DEFAULT_ITEM_IMAGE },
+  { id: 55, name: "លត+កាត់", price: 2500, stock: 1000, image: DEFAULT_ITEM_IMAGE },
+  { id: 56, name: "នំ", price: 2200, stock: 1000, image: DEFAULT_ITEM_IMAGE },
+  { id: 57, name: "ចុងGT", price: 6500, stock: 1000, image: DEFAULT_ITEM_IMAGE },
+  { id: 59, name: "ស្រួយ២០ដើម", price: 11000, stock: 1000, image: "https://i.postimg.cc/NfpgkHvP/photo-1-2026-07-29-11-27-40.jpg"},
+  { id: 60, name: "បន្តះស", price: 9000, stock: 1000, image: "https://i.postimg.cc/NfpgkHvP/photo-1-2026-07-29-11-27-40.jpg" },
+  { id: 61, name: "ដកAM", price: 11500, stock: 1000, image: "https://i.postimg.cc/NfpgkHvP/photo-1-2026-07-29-11-27-40.jpg" },
+  { id: 62, name: "ក្ដាមស្នូរ", price: 14500, stock: 1000, image: "https://i.postimg.cc/NfpgkHvP/photo-1-2026-07-29-11-27-40.jpg" },
+  { id: 63, name: "ប៉ាតេជ្រុង", price: 11000, stock: 1000, image: "https://i.postimg.cc/NfpgkHvP/photo-1-2026-07-29-11-27-40.jpg" },
+  { id: 64, name: "ស្រួយ២០ដើម", price: 11000, stock: 1000, image: "https://i.postimg.cc/NfpgkHvP/photo-1-2026-07-29-11-27-40.jpg"},
+  { id: 65, name: "ប៊", price: 11000, stock: 1000, image: DEFAULT_ITEM_IMAGE},
+]
+
 const receipts = [];
 const selectedItems = [];
 let showSavedReceipt = true;
+let searchQuery = "";
 const ADMIN_ROLES = new Set(["owner", "admin", "dev"]);
 const ROLE_CREDENTIALS = {
   owner: { name: "dara", password: "dara67123" },
@@ -81,6 +94,7 @@ const ROLE_CREDENTIALS = {
   dev: { name: "dev", password: "ddomm7123" }
 };
 const itemsGrid = document.getElementById("itemsGrid");
+const searchItemsInput = document.getElementById("searchItems");
 const receiptItemSelect = document.getElementById("receiptItem");
 const receiptPreview = document.getElementById("receiptPreview");
 const receiptForm = document.getElementById("receiptForm");
@@ -250,9 +264,18 @@ function populateSelects() {
   }
 }
 
+function getFilteredItems() {
+  if (!searchQuery.trim()) {
+    return items;
+  }
+  const query = searchQuery.toLowerCase();
+  return items.filter((item) => item.name.toLowerCase().includes(query));
+}
+
 function renderItems() {
   const isAdmin = canUseAdminControls();
-  itemsGrid.innerHTML = items
+  const filteredItems = getFilteredItems();
+  itemsGrid.innerHTML = filteredItems
     .map(
       (item) => {
         const imageSrc = getItemImage(item);
@@ -382,14 +405,30 @@ function getReceiptMarkup(receipt) {
           `;
           }
 
-          // Editable row for draft receipts: quantity input + remove button
+          // For draft receipts: show editable row with quantity input + remove button
+          if (isDraft) {
+            return `
+              <div class="receipt-row receipt-item-row" data-item-id="${entry.itemId}">
+                <div class="receipt-item-info">
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <strong>${entry.itemName}</strong>
+                    <input class="draft-qty" type="number" min="0" value="${entry.quantity}" data-item-id="${entry.itemId}" style="width:70px;padding:6px;border-radius:6px;border:1px solid #e5e7eb;" />
+                    <button class="draft-remove" data-item-id="${entry.itemId}" style="padding:4px 10px;border-radius:6px;background:#ef4444;color:#fff;border:none;cursor:pointer;font-weight:bold;font-size:16px;line-height:1;">✕</button>
+                  </div>
+                  <div class="receipt-item-meta">Unit: ${entry.price.toLocaleString()}៛</div>
+                </div>
+                <span class="receipt-item-total">${entry.total.toLocaleString()}៛</span>
+              </div>
+            `;
+          }
+
+          // For saved receipts: show simple view without edit controls
           return `
             <div class="receipt-row receipt-item-row" data-item-id="${entry.itemId}">
               <div class="receipt-item-info">
-                <div style="display:flex;align-items:center;gap:8px;">
+                <div>
                   <strong>${entry.itemName}</strong>
-                  <input class="draft-qty" type="number" min="0" value="${entry.quantity}" data-item-id="${entry.itemId}" style="width:70px;padding:6px;border-radius:6px;border:1px solid #e5e7eb;" />
-                  <button class="draft-remove" data-item-id="${entry.itemId}" style="padding:6px 8px;border-radius:6px;background:#ef4444;color:#fff;border:none;cursor:pointer;visibility:hidden;">&nbsp;</button>
+                  <span style="margin-left: 10px; color: #666;">x${entry.quantity}</span>
                 </div>
                 <div class="receipt-item-meta">Unit: ${entry.price.toLocaleString()}៛</div>
               </div>
@@ -439,7 +478,8 @@ function getReceiptMarkup(receipt) {
           <div class="signature-line"></div>
         </div>
       </div>
-      <div class="receipt-location">Location: ភូមិ...... សង្កាត់...... ស្រុក...... ខេត្ត......</div>
+      <div class="receipt-location">Location: ភូមិកណ្ដាល សង្កាត់​ រលួស ខណ្ឌ ដង្កោ ភ្នំពេញ</div>
+      ${!isDraft ? `<div style="margin-top: 20px; text-align: center;"><button class="edit-receipt-btn" data-receipt-no="${receipt.receiptNo}" style="padding:10px 20px;border-radius:6px;background:#c76b16;color:#fff;border:none;cursor:pointer;font-weight:bold;font-size:14px;">Edit Receipt</button></div>` : ''}
     </div>
   `;
 }
@@ -488,6 +528,7 @@ function renderReceipt() {
 
   const receipt = receipts[receipts.length - 1];
   receiptPreview.innerHTML = getReceiptMarkup(receipt);
+  attachSavedReceiptListeners();
 }
 
 function attachDraftListeners() {
@@ -515,6 +556,38 @@ function attachDraftListeners() {
       selectedItems.splice(idx, 1);
       renderItems();
       renderReceipt();
+    });
+  });
+}
+
+function editSavedReceipt(receiptNo) {
+  const receipt = receipts.find((r) => r.receiptNo === receiptNo);
+  if (!receipt) {
+    alert("Receipt not found.");
+    return;
+  }
+
+  // Load the receipt data back into the form
+  customerNameInput.value = receipt.customerName;
+  selectedItems.length = 0;
+  selectedItems.push(...receipt.items.map((item) => ({ ...item })));
+
+  // Switch to draft mode
+  showSavedReceipt = false;
+
+  // Update the UI
+  renderItems();
+  renderReceipt();
+  
+  // Scroll to form
+  document.querySelector(".receipt-card").scrollIntoView({ behavior: "smooth" });
+}
+
+function attachSavedReceiptListeners() {
+  document.querySelectorAll('.edit-receipt-btn').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      const receiptNo = e.target.getAttribute('data-receipt-no');
+      editSavedReceipt(receiptNo);
     });
   });
 }
@@ -658,9 +731,41 @@ function viewReceiptHistory() {
   alert(historyText);
 }
 
+function getReceiptForExport() {
+  if (selectedItems.length) {
+    const customerName = customerNameInput.value.trim() || selectedItems[0].customerName || "Customer";
+    const total = selectedItems.reduce((sum, entry) => sum + entry.total, 0);
+    return {
+      customerName,
+      receiptNo: `DRAFT-${Date.now().toString().slice(-4)}`,
+      items: selectedItems.map((entry) => ({ ...entry })),
+      total,
+      date: new Date().toLocaleString()
+    };
+  }
+
+  const lastReceipt = receipts[receipts.length - 1];
+  if (!lastReceipt) {
+    return null;
+  }
+
+  return {
+    ...lastReceipt,
+    items: lastReceipt.items.map((entry) => ({ ...entry }))
+  };
+}
+
 function init() {
   loadReceiptsFromLocalStorage();
   populateSelects();
+  
+  if (searchItemsInput) {
+    searchItemsInput.addEventListener("input", (e) => {
+      searchQuery = e.target.value;
+      renderItems();
+    });
+  }
+  
   roleButtons.forEach((button) => {
     button.addEventListener("click", () => {
       const selectedRole = button.dataset.role || "customer";
@@ -737,6 +842,15 @@ function escapeRtf(text) {
     .replace(/\n/g, "\\par ");
 }
 
+function escapeHtml(text) {
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function downloadFile(filename, content, mimeType) {
   const blob = new Blob([content], { type: mimeType });
   const link = document.createElement("a");
@@ -749,7 +863,7 @@ function downloadFile(filename, content, mimeType) {
 }
 
 function buildWordDocument() {
-  const receipt = receipts[receipts.length - 1];
+  const receipt = getReceiptForExport();
   if (!receipt) return;
 
   const date = new Date().toLocaleDateString("en-GB");
@@ -764,28 +878,90 @@ function buildWordDocument() {
 }
 
 function buildExcelDocument() {
-  const receipt = receipts[receipts.length - 1];
-  if (!receipt) return;
+  const receipt = getReceiptForExport();
+  if (!receipt) {
+    alert("Please create or select a receipt before downloading Excel.");
+    return;
+  }
 
   const date = new Date().toLocaleDateString("en-GB");
   const time = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  const exchangeRate = 4100;
+  const totalUsd = (receipt.total / exchangeRate).toFixed(2);
   const itemsRows = receipt.items
-    .map((entry) => `<tr><td>Product</td><td>${entry.itemName} (ID ${entry.itemId})</td></tr><tr><td>Qty / Unit / Item Total</td><td>${entry.quantity} x ${entry.price.toLocaleString()}៛ = ${entry.total.toLocaleString()}៛</td></tr>`)
+    .map((entry, index) => `
+      <tr>
+        <td>${index + 1}</td>
+        <td>${escapeHtml(entry.itemName || "-")}</td>
+        <td>${entry.quantity}</td>
+        <td>${entry.price.toLocaleString()}៛</td>
+        <td>${entry.total.toLocaleString()}៛</td>
+      </tr>
+    `)
     .join("");
+
   const html = `
     <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-      <head><meta charset="utf-8" /><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml></head>
+      <head>
+        <meta charset="utf-8" />
+        <style>
+          table { border-collapse: collapse; font-family: Arial, sans-serif; }
+          td { border: 1px solid #333; padding: 6px 8px; }
+          .title { font-weight: bold; font-size: 18px; text-align: center; }
+          .label { font-weight: bold; background: #f4f0e6; }
+          .total { font-weight: bold; background: #fff4d5; }
+        </style>
+        <xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml>
+      </head>
       <body>
         <table>
-          <tr><td colspan="2"><strong>Official Receipt</strong></td></tr>
-          <tr><td>Customer Name</td><td>${receipt.customerName}</td></tr>
-          <tr><td>Date</td><td>${date}</td></tr>
-          <tr><td>Time</td><td>${time}</td></tr>
-          <tr><td>Location</td><td>ភូមិ...... សង្កាត់...... ស្រុក...... ខេត្ត......</td></tr>
+          <tr>
+            <td colspan="5" class="title">Official Receipt</td>
+          </tr>
+          <tr>
+            <td class="label">Receipt No</td>
+            <td colspan="4">${escapeHtml(receipt.receiptNo || "DRAFT")}</td>
+          </tr>
+          <tr>
+            <td class="label">Customer Name</td>
+            <td colspan="4">${escapeHtml(receipt.customerName || "Customer")}</td>
+          </tr>
+          <tr>
+            <td class="label">Date</td>
+            <td colspan="4">${escapeHtml(date)}</td>
+          </tr>
+          <tr>
+            <td class="label">Time</td>
+            <td colspan="4">${escapeHtml(time)}</td>
+          </tr>
+          <tr>
+            <td class="label">Location</td>
+            <td colspan="4">ភូមិ..... សង្កាត់​ ..... ខណ្ឌ .... ខេត្ត.... </td>
+          </tr>
+          <tr>
+            <td class="label">No</td>
+            <td class="label">Item</td>
+            <td class="label">Qty</td>
+            <td class="label">Unit Price</td>
+            <td class="label">Amount</td>
+          </tr>
           ${itemsRows}
-          <tr><td>Total Price</td><td>${receipt.total.toLocaleString()}៛</td></tr>
-          <tr><td>Seller Signature</td><td></td></tr>
-          <tr><td>Customer Signature</td><td></td></tr>
+          <tr>
+            <td colspan="4" class="total">Total (៛)</td>
+            <td class="total">${receipt.total.toLocaleString()}៛</td>
+          </tr>
+          <tr>
+            <td colspan="4" class="total">Total (USD)</td>
+            <td class="total">$${totalUsd}</td>
+          </tr>
+          <tr>
+            <td class="label">Seller Signature</td>
+            <td colspan="4"></td>
+          </tr>
+          <tr>
+            <td class="label">Customer Signature</td>
+            <td colspan="4"></td>
+          </tr>
         </table>
       </body>
     </html>
