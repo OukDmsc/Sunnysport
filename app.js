@@ -98,6 +98,136 @@ const searchItemsInput = document.getElementById("searchItems");
 const receiptItemSelect = document.getElementById("receiptItem");
 const receiptPreview = document.getElementById("receiptPreview");
 const receiptForm = document.getElementById("receiptForm");
+
+// ========== ZOOM FUNCTIONALITY ==========
+const ZOOM_STORAGE_KEY = "pageZoomLevel";
+const MIN_ZOOM = 0.75; // 75%
+const MAX_ZOOM = 2.0; // 200%
+const ZOOM_STEP = 0.1; // 10%
+let currentZoom = parseFloat(localStorage.getItem(ZOOM_STORAGE_KEY)) || 1;
+
+function initializeZoom() {
+  applyZoom(currentZoom);
+  updateZoomDisplay();
+}
+
+function applyZoom(zoomLevel) {
+  document.body.style.transform = `scale(${zoomLevel})`;
+  document.body.style.transformOrigin = "top center";
+  document.body.style.width = `${100 / zoomLevel}%`;
+  document.body.style.height = `${100 / zoomLevel}%`;
+}
+
+function updateZoomDisplay() {
+  const zoomPercentage = Math.round(currentZoom * 100);
+  const zoomLevelDisplay = document.getElementById("zoomLevel");
+  if (zoomLevelDisplay) {
+    zoomLevelDisplay.textContent = zoomPercentage + "%";
+  }
+}
+
+function setZoom(zoomLevel) {
+  currentZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoomLevel));
+  localStorage.setItem(ZOOM_STORAGE_KEY, currentZoom.toString());
+  applyZoom(currentZoom);
+  updateZoomDisplay();
+}
+
+function zoomIn() {
+  setZoom(currentZoom + ZOOM_STEP);
+}
+
+function zoomOut() {
+  setZoom(currentZoom - ZOOM_STEP);
+}
+
+function resetZoom() {
+  setZoom(1);
+}
+
+// Desktop: Zoom with Ctrl/Cmd + Mouse Wheel
+document.addEventListener("wheel", (e) => {
+  if (e.ctrlKey || e.metaKey) {
+    e.preventDefault();
+    if (e.deltaY > 0) {
+      zoomOut();
+    } else {
+      zoomIn();
+    }
+  }
+}, { passive: false });
+
+// Desktop: Zoom with Ctrl/Cmd + Plus/Minus keys
+document.addEventListener("keydown", (e) => {
+  if (e.ctrlKey || e.metaKey) {
+    if (e.key === "+" || e.key === "=") {
+      e.preventDefault();
+      zoomIn();
+    } else if (e.key === "-") {
+      e.preventDefault();
+      zoomOut();
+    } else if (e.key === "0") {
+      e.preventDefault();
+      resetZoom();
+    }
+  }
+});
+
+// Mobile: Pinch zoom detection
+let lastDistance = 0;
+
+document.addEventListener("touchmove", (e) => {
+  if (e.touches.length === 2) {
+    e.preventDefault();
+    const touch1 = e.touches[0];
+    const touch2 = e.touches[1];
+    
+    const distance = Math.hypot(
+      touch2.clientX - touch1.clientX,
+      touch2.clientY - touch1.clientY
+    );
+    
+    if (lastDistance > 0) {
+      const delta = distance - lastDistance;
+      if (Math.abs(delta) > 5) {
+        if (delta > 0) {
+          zoomIn();
+        } else {
+          zoomOut();
+        }
+        lastDistance = distance;
+      }
+    } else {
+      lastDistance = distance;
+    }
+  }
+}, { passive: false });
+
+document.addEventListener("touchend", () => {
+  lastDistance = 0;
+});
+
+// Button controls
+function setupZoomButtons() {
+  const zoomInBtn = document.getElementById("zoomInBtn");
+  const zoomOutBtn = document.getElementById("zoomOutBtn");
+  const zoomResetBtn = document.getElementById("zoomResetBtn");
+  
+  if (zoomInBtn) zoomInBtn.addEventListener("click", zoomIn);
+  if (zoomOutBtn) zoomOutBtn.addEventListener("click", zoomOut);
+  if (zoomResetBtn) zoomResetBtn.addEventListener("click", resetZoom);
+}
+
+// Initialize zoom on page load
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", () => {
+    initializeZoom();
+    setupZoomButtons();
+  });
+} else {
+  initializeZoom();
+  setupZoomButtons();
+}
 const customerNameInput = document.getElementById("customerName");
 const receiptQtyInput = document.getElementById("receiptQty");
 const createReceiptBtn = document.getElementById("createReceiptBtn");
