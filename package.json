@@ -1,0 +1,53 @@
+{
+  "name": "football-field-booking",
+  "version": "1.0.0",
+  "private": true,
+  "engines": {
+    "node": ">=18.18.0"
+  },
+  "scripts": {
+    "dev": "prisma generate --schema prisma/schema.prisma && next dev",
+    "dev:network": "prisma generate --schema prisma/schema.prisma && next dev --hostname 0.0.0.0",
+    "build": "prisma generate --schema prisma/postgresql/schema.prisma && next build",
+    "vercel-build": "node scripts/vercel-build.mjs",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "db:generate": "prisma generate --schema prisma/schema.prisma",
+    "db:migrate": "prisma migrate dev --schema prisma/schema.prisma",
+    "db:deploy": "prisma migrate deploy --schema prisma/schema.prisma",
+    "db:push": "prisma db push --schema prisma/schema.prisma",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:pg:validate": "prisma validate --schema prisma/postgresql/schema.prisma",
+    "db:pg:generate": "prisma generate --schema prisma/postgresql/schema.prisma",
+    "db:pg:migrate": "prisma migrate dev --schema prisma/postgresql/schema.prisma",
+    "db:pg:deploy": "prisma migrate deploy --schema prisma/postgresql/schema.prisma",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.8.2",
+    "jose": "^6.0.11",
+    "next": "^15.3.2",
+    "nodemailer": "^10.2.1",
+    "qrcode": "^1.5.4",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "ts-khqr": "^2.2.3",
+    "zod": "^3.25.28"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.21",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^19.1.6",
+    "@types/react-dom": "^19.1.6",
+    "prisma": "^6.8.2",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.4"
+  },
+  "allowScripts": {
+    "@prisma/client@6.19.3": true,
+    "prisma@6.19.3": true,
+    "@prisma/engines@6.19.3": true,
+    "esbuild@0.28.2": true
+  }
+}
