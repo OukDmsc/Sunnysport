@@ -1,0 +1,26 @@
+{
+  "name": "sunny-sport-club-vanilla",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Standalone vanilla JavaScript and Express booking application",
+  "type": "module",
+  "engines": {
+    "node": ">=18.18.0"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node --test",
+    "db:generate": "prisma generate --schema prisma/schema.prisma"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.3",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "nodemailer": "^10.2.1"
+  },
+  "devDependencies": {
+    "prisma": "^6.19.3"
+  }
+}

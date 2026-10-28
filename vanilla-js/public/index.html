@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#16784b">
+  <title>Sunny Sport Club · Book a pitch</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script defer src="/app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/">SUNNY <span>SPORT CLUB</span><small>FIELD BOOKING</small></a>
+    <nav>
+      <a href="#book">Book a field</a>
+      <a href="#my-bookings">My bookings</a>
+      <button id="language-toggle" class="button secondary" type="button" aria-label="Switch language">ខ្មែរ</button>
+      <button id="customer-signout" class="button secondary hidden" type="button">Sign out</button>
+      <button id="admin-entry" class="button secondary" type="button">Admin</button>
+    </nav>
+  </header>
+  <main class="wrap">
+    <section class="hero">
+      <div>
+        <p class="eyebrow">YOUR NEXT GAME STARTS HERE</p>
+        <h1>Book the pitch.<br><em>Bring the game.</em></h1>
+        <p>Book a football field for your team, friends, and match nights.</p>
+        <a class="button primary" href="#book">Book a field ↓</a>
+      </div>
+      <div class="pitch-art" aria-hidden="true"><div class="circle"></div><span>⚽</span></div>
+    </section>
+    <div id="notice" role="status" class="notice hidden"></div>
+    <div id="error" role="alert" class="notice error hidden"></div>
+    <section id="book" class="panel">
+      <div class="section-title"><div><p class="eyebrow">RESERVE YOUR GAME</p><h2>Book a field</h2></div><span id="hours-label" class="muted"></span></div>
+      <div class="grid two">
+        <form id="booking-form" class="form-grid">
+          <label>Field<select name="fieldId" id="field-select" required></select></label>
+          <label>Date<input name="date" type="date" required></label>
+          <label>Start time<select name="startTime" id="start-time" required></select></label>
+          <label>Duration<select name="duration"><option value="1">1 hour</option><option value="2">2 hours</option><option value="3">3 hours</option><option value="4">4 hours</option><option value="5">5 hours</option><option value="6">6 hours</option></select></label>
+          <label>Your name<input name="customerName" minlength="2" maxlength="80" required></label>
+          <label>Phone<input name="phone" type="tel" placeholder="+855..." required></label>
+          <label class="wide">Notes (optional)<textarea name="notes" maxlength="500" rows="2"></textarea></label>
+          <p id="booking-total" class="wide muted"></p>
+          <button class="button primary wide" type="submit">Continue to booking</button>
+        </form>
+        <aside class="card">
+          <h3>Customer account</h3>
+          <p class="muted">Sign in or create an account to make a booking and manage your reservations.</p>
+          <div class="button-row"><button id="show-login" class="button secondary">Sign in</button><button id="show-register" class="button secondary">Create account</button></div>
+          <form id="login-form" class="stack hidden">
+            <label>Email or phone<input name="identifier" required></label>
+            <label>Password<input name="password" type="password" required></label>
+            <button class="button primary">Sign in</button><button type="button" id="show-recovery" class="link-button">Forgot password?</button>
+          </form>
+          <form id="register-form" class="stack hidden">
+            <label>Name<input name="name" minlength="2" maxlength="80" required></label>
+            <label>Email<input name="email" type="email" required></label>
+            <label>Phone<input name="phone" type="tel" required></label>
+            <label>Password (10+ characters)<input name="password" type="password" minlength="10" maxlength="128" required></label>
+            <button class="button primary">Create account</button>
+          </form>
+          <form id="recovery-form" class="stack hidden">
+            <label>Email or Cambodian phone<input name="identifier" required></label>
+            <label>Send code by<select name="channel"><option value="email">Email</option><option value="phone">SMS</option></select></label>
+            <button class="button primary">Send recovery code</button>
+          </form>
+          <form id="verify-form" class="stack hidden">
+            <label>Six-digit recovery code<input name="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required></label>
+            <button class="button primary">Verify code</button>
+          </form>
+          <form id="reset-form" class="stack hidden">
+            <label>New password<input name="password" type="password" minlength="10" required></label>
+            <label>Confirm password<input name="confirmPassword" type="password" minlength="10" required></label>
+            <button class="button primary">Reset password</button>
+          </form>
+        </aside>
+      </div>
+      <div id="booking-result" class="card hidden"></div>
+    </section>
+    <section id="my-bookings" class="panel">
+      <div class="section-title"><div><p class="eyebrow">YOUR RESERVATIONS</p><h2>My bookings</h2></div><button id="refresh-customer-bookings" class="button secondary">Refresh</button></div>
+      <div id="customer-bookings" class="table-wrap muted">Sign in to view your booking history.</div>
+    </section>
+    <section id="admin" class="panel hidden">
+      <div id="admin-login-area">
+        <p class="eyebrow">STAFF AREA</p><h2>Administrator sign in</h2>
+        <form id="admin-login-form" class="form-grid compact">
+          <label>Username<input name="username" required></label><label>Password<input name="password" type="password" required></label>
+          <button class="button primary wide">Sign in</button>
+        </form>
+      </div>
+      <div id="admin-console" class="hidden">
+        <div class="section-title"><div><p class="eyebrow">FIELD OPERATIONS</p><h2>Administrator dashboard</h2></div><button id="admin-logout" class="button secondary">Sign out</button></div>
+        <div id="admin-summary" class="stats"></div>
+        <div class="tabs" id="admin-tabs">
+          <button data-tab="bookings" class="selected">Bookings</button><button data-tab="schedule">Schedule</button>
+          <button data-tab="fields">Fields</button><button data-tab="payments">Payments</button>
+          <button data-tab="customers">Customers</button><button data-tab="settings">Settings & reports</button>
+        </div>
+        <div id="admin-content"></div>
+      </div>
+    </section>
+  </main>
+  <footer>Sunny Sport Club · Cambodia · Prices shown in USD</footer>
+</body>
+</html>

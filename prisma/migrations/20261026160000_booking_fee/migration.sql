@@ -1,0 +1,1 @@
+ALTER TABLE "Booking" ADD COLUMN "bookingFeeCents" INTEGER NOT NULL DEFAULT 0;
