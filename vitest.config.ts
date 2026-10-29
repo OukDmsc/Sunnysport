@@ -8,4 +8,7 @@ export default defineConfig({
   resolve: {
     alias: { "@": path.resolve(root, "src") },
   },
+  test: {
+    include: ["src/**/*.test.ts"],
+  },
 });

@@ -2,7 +2,7 @@
 
 The Sunny Sports Club logo is stored locally at `public/sunny-sport-club.jpg` and is used in the app header, footer, and browser icon. Standard-size PNG icons generated from that JPG are used for Android/iOS PWA installation.
 
-A responsive, bilingual (English and Khmer) booking and admin application for a football field business in Cambodia. Booking prices are displayed in USD and approximate Cambodian riel. Playing hours are fixed at 7:00 AM–8:00 PM Cambodia time; online bookings can be submitted at any time. The language switch is available on both customer and admin pages; the selection is remembered in the browser. The first release uses SQLite for a simple local setup, Prisma migrations, Next.js route handlers, and a server-rendered API boundary for all private actions.
+A responsive, bilingual (English and Khmer) booking and admin application for a football field business in Cambodia. Booking prices are displayed in USD and approximate Cambodian riel. Playing hours are fixed at 7:00 AM–8:00 PM Cambodia time; online bookings can be submitted at any time. The language switch is available on both customer and admin pages; the selection is remembered in the browser. Local development uses the existing SQLite database; production uses PostgreSQL (Supabase), Prisma migrations, Next.js route handlers, and a server-rendered API boundary for all private actions.
 
 ## Requirements
 
@@ -218,7 +218,7 @@ The new Prisma migration adds recovery method, attempt count, OTP verification s
 npm run db:deploy
 ```
 
-For production, deploy behind HTTPS, keep `.env` and `prisma/dev.db` private, set stable high-entropy `SESSION_SECRET`, and store API credentials in the hosting platform's secret manager. Configure the trusted reverse proxy to overwrite `X-Forwarded-For`; the application uses that header for IP-based throttling. Use a managed database with backups and monitoring for multi-instance production deployments; this SQLite project is intended for local/single-instance use. Add provider webhooks/alerts and operational monitoring for email/SMS delivery failures before relying on account recovery at scale.
+For production, deploy behind HTTPS, keep `.env` and `prisma/dev.db` private, set a stable high-entropy `SESSION_SECRET`, and store API credentials in the hosting platform's secret manager. Production uses the PostgreSQL database configured in Vercel; use managed backups and monitoring. Configure the trusted reverse proxy to overwrite `X-Forwarded-For`; the application uses that header for IP-based throttling. Add provider webhooks/alerts and operational monitoring for email/SMS delivery failures before relying on account recovery at scale.
 
 ## Telegram setup
 
@@ -235,9 +235,11 @@ Restart Next.js after editing `.env`. Tokens are used only in server-side API ca
 
 ## Database
 
-SQLite is used for local development (`DATABASE_URL="file:./dev.db"`). Prisma schema and the initial migration are in `prisma/`. The seed script safely upserts three sample fields and can be rerun.
+Local development continues to use the existing SQLite database at `prisma/dev.db`, configured with `DATABASE_URL="file:./dev.db"`. Its schema and migration history remain in `prisma/schema.prisma` and `prisma/migrations/`; the `db:*` development commands and `dev` scripts explicitly use that schema.
 
-The checked-in migration history is SQLite-specific. For PostgreSQL, set the Prisma datasource provider in `prisma/schema.prisma` to `postgresql`, set a private PostgreSQL `DATABASE_URL`, and create a PostgreSQL-specific initial migration against an empty database before deploying it. Do not apply the checked-in SQLite migration to PostgreSQL. Review provider-specific migrations in a non-production environment first.
+Production builds generate Prisma Client from `prisma/postgresql/schema.prisma`. Production uses PostgreSQL, such as Supabase, with `DATABASE_URL` set to the Supabase pooled connection URL and `DIRECT_URL` set to the direct connection URL for migrations. Set these values as environment variables in Vercel; do not commit credentials. PostgreSQL-specific schema and migration history are isolated under `prisma/postgresql/`, and the `db:pg:*` scripts target that schema. Review migrations in a non-production environment before applying them.
+
+The existing SQLite migrations are SQLite-specific and must never be applied to PostgreSQL. Changing the production database does not transfer SQLite records: preserving existing data requires a separate, planned SQLite-to-PostgreSQL export/import and verification step. No data transfer is performed by the schema or migration setup.
 
 ## Important operational notes
 

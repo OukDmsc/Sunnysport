@@ -1,0 +1,122 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Field {
+  id              String    @id @default(cuid())
+  name            String    @unique
+  surface         String    @default("Artificial turf")
+  hourlyRateCents Int       @default(2000)
+  description     String    @default("")
+  active          Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  bookings        Booking[]
+}
+
+model Booking {
+  id                          String                 @id @default(cuid())
+  reference                   String                 @unique
+  customerName                String
+  phone                       String
+  notes                       String                 @default("")
+  date                        String
+  startTime                   String
+  duration                    Int
+  endTime                     String
+  totalCents                  Int
+  bookingFeeCents             Int                    @default(0)
+  amountPaidCents             Int                    @default(0)
+  status                      String                 @default("PENDING")
+  paymentStatus               String                 @default("PENDING")
+  paymentMethod               String                 @default("MANUAL_KHQR")
+  verifiedAt                  DateTime?
+  verifiedBy                  String?
+  paymentTransactionReference String?                @unique
+  createdAt                   DateTime               @default(now())
+  updatedAt                   DateTime               @updatedAt
+  fieldId                     String
+  field                       Field                  @relation(fields: [fieldId], references: [id])
+  customerAccountId           String?
+  customerAccount             CustomerAccount?       @relation(fields: [customerAccountId], references: [id], onDelete: SetNull)
+  slots                       BookingSlot[]
+  customerAccess              CustomerBookingAccess?
+
+  @@index([date, fieldId])
+  @@index([customerName, phone])
+  @@index([paymentStatus])
+  @@index([customerAccountId])
+}
+
+model CustomerAccount {
+  id             String                  @id @default(cuid())
+  name           String
+  email          String?                 @unique
+  phone          String?                 @unique
+  passwordHash   String
+  sessionVersion Int                     @default(0)
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+  bookings       Booking[]
+  challenges     CustomerAuthChallenge[]
+}
+
+model CustomerAuthChallenge {
+  id                  String          @id @default(cuid())
+  customerAccountId   String
+  purpose             String
+  recoveryMethod      String          @default("email")
+  emailCodeHash       String
+  phoneCodeHash       String
+  attemptCount        Int             @default(0)
+  expiresAt           DateTime
+  usedAt              DateTime?
+  verifiedAt          DateTime?
+  resetTokenHash      String?         @unique
+  resetTokenExpiresAt DateTime?
+  createdAt           DateTime        @default(now())
+  customerAccount     CustomerAccount @relation(fields: [customerAccountId], references: [id], onDelete: Cascade)
+
+  @@index([customerAccountId, purpose, createdAt])
+  @@index([purpose, usedAt, expiresAt])
+}
+
+model CustomerAuthRateLimit {
+  key       String   @id
+  count     Int
+  resetAt   DateTime
+  updatedAt DateTime @updatedAt
+
+  @@index([resetAt])
+}
+
+model CustomerBookingAccess {
+  id        String   @id @default(cuid())
+  bookingId String   @unique
+  tokenHash String   @unique
+  createdAt DateTime @default(now())
+  booking   Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+}
+
+model BookingSlot {
+  id        String  @id @default(cuid())
+  bookingId String
+  fieldId   String
+  date      String
+  time      String
+  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@unique([fieldId, date, time])
+  @@index([bookingId])
+}
+
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}

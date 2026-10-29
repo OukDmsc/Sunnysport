@@ -1,7 +1,10 @@
 .env*
 !.env.example
+*.db
 node_modules/
 .next/
 coverage/
 prisma/dev.db
+prisma/dev-backup.db
 prisma/dev.db-journal
+.vercel
