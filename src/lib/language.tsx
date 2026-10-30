@@ -201,7 +201,7 @@ const translations: Record<string, string> = {
   "Integrations": "ការតភ្ជាប់សេវាផ្សេងៗ",
   "Telegram notifications": "ការជូនដំណឹងតាម Telegram",
   "Bot token and group chat configured": "បានកំណត់ Token របស់ Bot និង Group Telegram",
-  "Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID in .env.local": "កំណត់ TELEGRAM_BOT_TOKEN និង TELEGRAM_CHAT_ID ក្នុង .env.local",
+  "Set TELEGRAM_BOT_TOKEN and TELEGRAM_GROUP_CHAT_ID in .env.local": "កំណត់ TELEGRAM_BOT_TOKEN និង TELEGRAM_GROUP_CHAT_ID ក្នុង .env.local",
   "Send test message to group": "ផ្ញើសារសាកល្បងទៅកាន់ Group",
   "Sending test message...": "កំពុងផ្ញើសារសាកល្បង...",
   "Test message sent to Telegram group.": "បានផ្ញើសារសាកល្បងទៅកាន់ Group Telegram។",

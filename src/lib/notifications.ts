@@ -1,7 +1,7 @@
 import type { Booking, Field } from "@prisma/client";
 import { randomUUID } from "node:crypto";
 import { formatTime } from "./time";
-import { calculateBookingAmountDueCents } from "./deposit";
+import { calculateBookingAmountDueCents, calculateDepositCents } from "./deposit";
 
 type BookingWithField = Booking & { field: Field };
 
@@ -21,9 +21,13 @@ export function normalizeTelegramChatId(rawValue: string) {
   return /^-?\d+$/.test(normalized) ? normalized : `@${normalized}`;
 }
 
+export function isTelegramConfigured() {
+  return Boolean(process.env.TELEGRAM_BOT_TOKEN && (process.env.TELEGRAM_GROUP_CHAT_ID || process.env.TELEGRAM_CHAT_ID));
+}
+
 export async function sendTelegramMessage(text: string) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
-  const chatId = normalizeTelegramChatId(process.env.TELEGRAM_CHAT_ID ?? "");
+  const chatId = normalizeTelegramChatId(process.env.TELEGRAM_GROUP_CHAT_ID || process.env.TELEGRAM_CHAT_ID || "");
   if (!token || !chatId) return { delivered: false, reason: "Telegram is not configured." };
 
   try {
@@ -34,19 +38,46 @@ export async function sendTelegramMessage(text: string) {
       signal: AbortSignal.timeout(8000),
     });
     if (!response.ok) {
-      console.error("Telegram notification failed:", response.status, await response.text());
+      console.error("Telegram notification failed with HTTP status:", response.status);
       return { delivered: false, reason: "Telegram rejected the notification." };
     }
     const result: unknown = await response.json();
     if (!result || typeof result !== "object" || !("ok" in result) || result.ok !== true) {
-      console.error("Telegram notification was not accepted by the Bot API:", result);
+      console.error("Telegram notification was not accepted by the Bot API.");
       return { delivered: false, reason: "Telegram rejected the notification." };
     }
     return { delivered: true };
-  } catch (error) {
-    console.error("Telegram notification could not be delivered:", error);
+  } catch {
+    console.error("Telegram notification could not be delivered.");
     return { delivered: false, reason: "Telegram could not be reached." };
   }
+}
+
+export function formatNewBookingNotification(booking: BookingWithField) {
+  const depositCents = calculateDepositCents(booking.totalCents);
+  const remainingCents = booking.totalCents - depositCents;
+  return [
+    "🔔 NEW BOOKING",
+    "",
+    `🏟️ Field: ${booking.field.name}`,
+    `📅 Date: ${booking.date}`,
+    `⏰ Time: ${formatTime(booking.startTime)} - ${formatTime(booking.endTime)}`,
+    "",
+    `👤 Customer: ${booking.customerName}`,
+    `📞 Phone: ${booking.phone}`,
+    "",
+    `💰 Total: $${(booking.totalCents / 100).toFixed(2)}`,
+    `💳 Deposit: $${(depositCents / 100).toFixed(2)}`,
+    `💵 Remaining: $${(remainingCents / 100).toFixed(2)}`,
+    "",
+    `💳 Payment: ${booking.paymentStatus}`,
+    "",
+    `🆔 Booking ID: #${booking.reference}`,
+  ].join("\n");
+}
+
+export async function notifyNewBooking(booking: BookingWithField) {
+  return sendTelegramMessage(formatNewBookingNotification(booking));
 }
 
 export async function notifyAdmin(booking: BookingWithField, event: string) {

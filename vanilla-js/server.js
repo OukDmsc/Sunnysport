@@ -309,11 +309,12 @@ function hasDeliveryConfig(channel) {
     || (process.env.SMS_PROVIDER === "twilio" && !!process.env.TWILIO_ACCOUNT_SID && !!process.env.TWILIO_AUTH_TOKEN && !!process.env.TWILIO_PHONE_NUMBER);
 }
 async function telegram(text) {
-  if (!process.env.TELEGRAM_BOT_TOKEN || !process.env.TELEGRAM_CHAT_ID) return { delivered: false, reason: "Telegram is not configured." };
+  const chatId = process.env.TELEGRAM_GROUP_CHAT_ID || process.env.TELEGRAM_CHAT_ID;
+  if (!process.env.TELEGRAM_BOT_TOKEN || !chatId) return { delivered: false, reason: "Telegram is not configured." };
   try {
     const response = await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
       method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ chat_id: process.env.TELEGRAM_CHAT_ID, text }), signal: AbortSignal.timeout(8000),
+      body: JSON.stringify({ chat_id: chatId, text }), signal: AbortSignal.timeout(8000),
     });
     if (!response.ok) return { delivered: false, reason: "Telegram rejected the notification." };
     const result = await response.json();
@@ -326,6 +327,27 @@ async function notifyBooking(booking, event) {
   const row = booking.field ? booking : await db.booking.findUnique({ where: { id: booking.id }, include: { field: true } });
   if (!row) return { delivered: false, reason: "Booking not found." };
   const amount = row.paymentStatus === "PAID" ? row.amountPaidCents : deposit(row.totalCents);
+  if (event === "NEW FOOTBALL FIELD BOOKING") {
+    const depositCents = deposit(row.totalCents);
+    return telegram([
+      "🔔 NEW BOOKING",
+      "",
+      `🏟️ Field: ${row.field.name}`,
+      `📅 Date: ${row.date}`,
+      `⏰ Time: ${row.startTime} - ${row.endTime}`,
+      "",
+      `👤 Customer: ${row.customerName}`,
+      `📞 Phone: ${row.phone}`,
+      "",
+      `💰 Total: $${(row.totalCents / 100).toFixed(2)}`,
+      `💳 Deposit: $${(depositCents / 100).toFixed(2)}`,
+      `💵 Remaining: $${((row.totalCents - depositCents) / 100).toFixed(2)}`,
+      "",
+      `💳 Payment: ${row.paymentStatus}`,
+      "",
+      `🆔 Booking ID: #${row.reference}`,
+    ].join("\n"));
+  }
   return telegram([
     `⚽ ${event}`, `Booking ID: #${row.reference}`, `Customer: ${row.customerName}`, `Phone: ${row.phone}`,
     `Field: ${row.field.name}`, `Date: ${row.date}`, `Time: ${row.startTime} - ${row.endTime}`,
@@ -625,7 +647,7 @@ app.get("/api/settings", requireAdmin, async (req, res) => {
   const saved = await config();
   res.json({
     ...saved, paymentMode: "Manual KHQR — admin verification required",
-    telegramConfigured: !!(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID),
+    telegramConfigured: !!(process.env.TELEGRAM_BOT_TOKEN && (process.env.TELEGRAM_GROUP_CHAT_ID || process.env.TELEGRAM_CHAT_ID)),
     khqrConfigured: !!(process.env.KHQR_IMAGE_URL || process.env.KHQR_PAYMENT_URL),
     emailRecoveryConfigured: hasDeliveryConfig("email"), phoneRecoveryConfigured: hasDeliveryConfig("phone"),
   });

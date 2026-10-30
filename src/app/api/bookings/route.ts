@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 import QRCode from "qrcode";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { bookingReference, notifyAdmin } from "@/lib/notifications";
+import { bookingReference, notifyNewBooking } from "@/lib/notifications";
 import {
   BOOKING_DISCOUNT_CENTS,
   calculateFinalBookingTotalCents,
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
       });
       return created;
     });
-    const notification = await notifyAdmin(booking, "NEW FOOTBALL FIELD BOOKING");
+    const notification = await notifyNewBooking(booking);
     return NextResponse.json({
       booking,
       customerAccessToken,

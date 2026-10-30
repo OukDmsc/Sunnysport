@@ -5,6 +5,7 @@ import { hasTrustedOrigin, isAdminRequest, unauthorized } from "@/lib/auth";
 import { hasCustomerRecoveryConfiguration } from "@/lib/customer-auth";
 import { hasDynamicKhqrConfiguration, isDynamicKhqrConfigured } from "@/lib/khqr";
 import { PLAYING_HOURS } from "@/lib/booking";
+import { isTelegramConfigured } from "@/lib/notifications";
 
 const settingsSchema = z.object({
   usdToKhrRate: z.number().int().min(1000).max(10000),
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest) {
     openingHours: PLAYING_HOURS,
     usdToKhrRate: Number(saved.usdToKhrRate ?? process.env.USD_TO_KHR_RATE ?? "4100"),
     paymentMode: "Manual KHQR — admin verification required",
-    telegramConfigured: Boolean(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID),
+    telegramConfigured: isTelegramConfigured(),
     khqrConfigured: Boolean(process.env.KHQR_IMAGE_URL || process.env.KHQR_PAYMENT_URL || isDynamicKhqrConfigured()),
     khqrAmountPrefillConfigured: isDynamicKhqrConfigured(),
     khqrDynamicConfigurationStarted: hasDynamicKhqrConfiguration(),
