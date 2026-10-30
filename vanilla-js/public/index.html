@@ -58,7 +58,7 @@
             <label>Name<input name="name" minlength="2" maxlength="80" required></label>
             <label>Email<input name="email" type="email" required></label>
             <label>Phone<input name="phone" type="tel" required></label>
-            <label>Password (10+ characters)<input name="password" type="password" minlength="10" maxlength="128" required></label>
+            <label>Password<input name="password" type="password" minlength="8" maxlength="16" required><small style="color:var(--muted);font-size:.75rem;font-weight:400;line-height:1.5">លេខកូដសម្ងាត់ត្រូវមានពី 8 ដល់ 16 តួអក្សរ។ អ្នកអាចប្រើលេខកូដតាមដែលអ្នកចង់បាន។</small></label>
             <button class="button primary">Create account</button>
           </form>
           <form id="recovery-form" class="stack hidden">
@@ -71,8 +71,8 @@
             <button class="button primary">Verify code</button>
           </form>
           <form id="reset-form" class="stack hidden">
-            <label>New password<input name="password" type="password" minlength="10" required></label>
-            <label>Confirm password<input name="confirmPassword" type="password" minlength="10" required></label>
+            <label>New password<input name="password" type="password" minlength="8" maxlength="16" required></label>
+            <label>Confirm password<input name="confirmPassword" type="password" minlength="8" maxlength="16" required></label>
             <button class="button primary">Reset password</button>
           </form>
         </aside>

@@ -6,8 +6,8 @@ import { db } from "@/lib/db";
 
 const resetSchema = z.object({
   resetToken: z.string().min(40).max(100),
-  password: z.string().min(10).max(128),
-  confirmPassword: z.string().min(10).max(128),
+  password: z.string().min(8).max(16),
+  confirmPassword: z.string().min(8).max(16),
 }).refine((value) => value.password === value.confirmPassword, { path: ["confirmPassword"] });
 const invalidToken = { error: "Password reset authorization is invalid or expired. Verify a new recovery code." };
 
@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
   }
   const parsed = resetSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: "Enter matching passwords with at least 10 characters." }, { status: 400 });
+    return NextResponse.json({ error: "Enter matching passwords between 8 and 16 characters." }, { status: 400 });
   }
 
   try {

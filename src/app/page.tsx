@@ -532,8 +532,7 @@ function CustomerAuthPanel({ onAuthenticated, onError }: {
       {mode === "register" && <>
         <label>{t("Full name")}<input name="name" required minLength={2} maxLength={80} autoComplete="name" /></label>
         <label>{t("Email or phone")}<input name="identifier" type="text" required maxLength={254} autoComplete="username" /></label>
-        <label>{t("Password")}<input name="password" type="password" required minLength={10} maxLength={128} autoComplete="new-password" /></label>
-        <small>{t("Use one email address or phone number for your account, and a password of at least 10 characters.")}</small>
+        <label>{t("Password")}<input name="password" type="password" required minLength={8} maxLength={16} autoComplete="new-password" /><small style={{ color: "#687a6d", fontSize: "11px", fontWeight: 400, lineHeight: 1.6 }}>លេខកូដសម្ងាត់ត្រូវមានពី 8 ដល់ 16 តួអក្សរ។ អ្នកអាចប្រើលេខកូដតាមដែលអ្នកចង់បាន។</small></label>
       </>}
       {mode === "forgot" && <>
         <label>{t(channel === "email" ? "Account email" : "Account phone number")}
@@ -550,8 +549,8 @@ function CustomerAuthPanel({ onAuthenticated, onError }: {
         <label>{t("Six-digit recovery code")}<input name="code" type="text" required inputMode="numeric" pattern="[0-9]{6}" maxLength={6} autoComplete="one-time-code" /></label>
       </>}
       {mode === "reset" && <>
-        <label>{t("New password")}<input name="password" type="password" required minLength={10} maxLength={128} autoComplete="new-password" /></label>
-        <label>{t("Confirm new password")}<input name="confirmPassword" type="password" required minLength={10} maxLength={128} autoComplete="new-password" /></label>
+        <label>{t("New password")}<input name="password" type="password" required minLength={8} maxLength={16} autoComplete="new-password" /></label>
+        <label>{t("Confirm new password")}<input name="confirmPassword" type="password" required minLength={8} maxLength={16} autoComplete="new-password" /></label>
       </>}
       {notice && <p className={`customer-auth-notice ${noticeError ? "error" : ""}`} role={noticeError ? "alert" : "status"}>{notice}</p>}
       <button type="submit" className="primary-button" disabled={busy}>{busy ? t("Please wait...") : t(mode === "login" ? "Sign in" : mode === "register" ? "Create account" : mode === "forgot" ? "Send recovery code" : mode === "verify" ? "Verify code" : "Save new password")}</button>

@@ -120,14 +120,14 @@ import {
   verifyCustomerPassword,
 } from "@/lib/customer-auth";
 
-function postRequest(path: string, body: unknown) {
+function postRequest(path: string, body: unknown, ip = "203.0.113.21") {
   return new Request(`http://localhost:3000/api/customer/${path}`, {
     method: "POST",
     headers: {
       origin: "http://localhost:3000",
       host: "localhost:3000",
       "content-type": "application/json",
-      "x-forwarded-for": "203.0.113.21",
+      "x-forwarded-for": ip,
     },
     body: JSON.stringify(body),
   });
@@ -221,7 +221,7 @@ describe("customer password recovery", () => {
     const response = await registerCustomer(postRequest("customer/register", {
       name: "Email Only",
       identifier: " Email.Only@example.test ",
-      password: "A-strong-password-123",
+      password: "StrongPass123",
     }) as never);
 
     expect(response.status).toBe(201);
@@ -232,7 +232,7 @@ describe("customer password recovery", () => {
     });
     const login = await customerLogin(postRequest("customer/login", {
       identifier: "EMAIL.ONLY@example.test",
-      password: "A-strong-password-123",
+      password: "StrongPass123",
     }) as never);
     expect(login.status).toBe(200);
   });
@@ -241,7 +241,7 @@ describe("customer password recovery", () => {
     const response = await registerCustomer(postRequest("customer/register", {
       name: "Phone Only",
       identifier: "012 345 679",
-      password: "A-strong-password-123",
+      password: "StrongPass123",
     }) as never);
 
     expect(response.status).toBe(201);
@@ -252,9 +252,37 @@ describe("customer password recovery", () => {
     });
     const login = await customerLogin(postRequest("customer/login", {
       identifier: "+855 12 345 679",
-      password: "A-strong-password-123",
+      password: "StrongPass123",
     }) as never);
     expect(login.status).toBe(200);
+  });
+
+  it("accepts any password from 8 through 16 characters during registration", async () => {
+    const minimumLength = await registerCustomer(postRequest("customer/register", {
+      name: "Minimum Password",
+      email: "minimum-password@example.test",
+      password: "12345678",
+    }, "203.0.113.30") as never);
+    const maximumLength = await registerCustomer(postRequest("customer/register", {
+      name: "Maximum Password",
+      email: "maximum-password@example.test",
+      password: "@@@@@@@@@@@@@@@@",
+    }, "203.0.113.31") as never);
+    const tooShort = await registerCustomer(postRequest("customer/register", {
+      name: "Short Password",
+      email: "short-password@example.test",
+      password: "1234567",
+    }, "203.0.113.32") as never);
+    const tooLong = await registerCustomer(postRequest("customer/register", {
+      name: "Long Password",
+      email: "long-password@example.test",
+      password: "@@@@@@@@@@@@@@@@@",
+    }, "203.0.113.33") as never);
+
+    expect(minimumLength.status).toBe(201);
+    expect(maximumLength.status).toBe(201);
+    expect(tooShort.status).toBe(400);
+    expect(tooLong.status).toBe(400);
   });
 
   it("rejects account creation with both or neither contact method", async () => {
@@ -262,13 +290,13 @@ describe("customer password recovery", () => {
       name: "Both Contacts",
       email: "both@example.test",
       phone: "+85512345679",
-      password: "A-strong-password-123",
+      password: "StrongPass123",
     }) as never);
     expect(both.status).toBe(400);
 
     const neither = await registerCustomer(postRequest("customer/register", {
       name: "No Contact",
-      password: "A-strong-password-123",
+      password: "StrongPass123",
     }) as never);
     expect(neither.status).toBe(400);
     expect(mocks.state.accounts).toHaveLength(1);
@@ -508,28 +536,28 @@ describe("customer password recovery", () => {
 
     const passwordResponse = await resetPassword(postRequest("customer/reset-password", {
       resetToken,
-      password: "A-new-strong-password",
-      confirmPassword: "A-new-strong-password",
+      password: "NewPass123",
+      confirmPassword: "NewPass123",
     }) as never);
     expect(passwordResponse.status).toBe(200);
     expect(await passwordResponse.json()).toEqual({ passwordReset: true });
     const account = mocks.state.accounts[0];
     expect(account.sessionVersion).toBe(1);
-    expect(account.passwordHash).not.toBe("A-new-strong-password");
-    await expect(verifyCustomerPassword("A-new-strong-password", String(account.passwordHash))).resolves.toBe(true);
+    expect(account.passwordHash).not.toBe("NewPass123");
+    await expect(verifyCustomerPassword("NewPass123", String(account.passwordHash))).resolves.toBe(true);
 
     const replay = await resetPassword(postRequest("customer/reset-password", {
       resetToken,
-      password: "Another-new-strong-password",
-      confirmPassword: "Another-new-strong-password",
+      password: "Another123",
+      confirmPassword: "Another123",
     }) as never);
     expect(replay.status).toBe(400);
   });
 
   it("allows customer login with the reset password and preserves unrelated accounts", async () => {
-    const originalPassword = "Original-customer-pass-1";
-    const replacementPassword = "Replacement-customer-pass-2";
-    const unrelatedHash = await hashCustomerPassword("Unrelated-customer-pass-3");
+    const originalPassword = "OriginalPass1";
+    const replacementPassword = "ReplacePass2";
+    const unrelatedHash = await hashCustomerPassword("UnrelatedPass3");
     mocks.state.accounts.push({
       id: "unrelated-customer",
       name: "Unrelated Customer",
@@ -606,7 +634,7 @@ describe("customer password recovery", () => {
 
     const unrelatedLogin = await customerLogin(postRequest("customer/login", {
       identifier: "unrelated@example.test",
-      password: "Unrelated-customer-pass-3",
+      password: "UnrelatedPass3",
     }) as never);
     expect(unrelatedLogin.status).toBe(200);
   });
@@ -681,8 +709,8 @@ describe("customer password recovery", () => {
   it("rejects password reset without valid server-issued authorization", async () => {
     const response = await resetPassword(postRequest("customer/reset-password", {
       resetToken: "x".repeat(43),
-      password: "A-new-strong-password",
-      confirmPassword: "A-new-strong-password",
+      password: "NewPass123",
+      confirmPassword: "NewPass123",
     }) as never);
     expect(response.status).toBe(400);
     expect(mocks.state.accounts[0].passwordHash).toBe("old-hash");
@@ -691,8 +719,8 @@ describe("customer password recovery", () => {
   it("rejects mismatched confirmation before changing the account", async () => {
     const response = await resetPassword(postRequest("customer/reset-password", {
       resetToken: "x".repeat(43),
-      password: "A-new-strong-password",
-      confirmPassword: "A-different-strong-password",
+      password: "NewPass123",
+      confirmPassword: "Different123",
     }) as never);
     expect(response.status).toBe(400);
     expect(mocks.state.accounts[0].passwordHash).toBe("old-hash");

@@ -135,7 +135,7 @@ function validCambodianPhone(value) {
   return validPhone(value) && /^\+855\d{8,9}$/.test(normalizePhone(value));
 }
 function validEmail(value) { return typeof value === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) && value.length <= 254; }
-function validPassword(value) { return typeof value === "string" && value.length >= 10 && value.length <= 128; }
+function validPassword(value) { return typeof value === "string" && value.length >= 8 && value.length <= 16; }
 function customerPublic(customer) {
   return { id: customer.id, name: customer.name, email: customer.email, phone: customer.phone };
 }
@@ -368,7 +368,7 @@ app.post("/api/customer/register", trustedOrigin, async (req, res) => {
   if (authLimit("register", requestIp(req), 5, 15 * 60 * 1000)) return res.status(429).json({ error: "Too many account creation attempts. Try again later." });
   const { name, email, phone, password } = req.body || {};
   if (typeof name !== "string" || name.trim().length < 2 || name.trim().length > 80 || !validEmail(email) || !validPhone(phone) || !validPassword(password)) {
-    return badJson(res, "Enter your name, a valid email address, a valid phone number, and a password of at least 10 characters.");
+    return badJson(res, "Enter your name, a valid email address, a valid phone number, and a password between 8 and 16 characters.");
   }
   try {
     const customer = await db.customerAccount.create({ data: { name: name.trim(), email: normalizeEmail(email), phone: normalizePhone(phone), passwordHash: await hashPassword(password) } });
@@ -723,7 +723,7 @@ app.post("/api/customer/verify-reset-code", trustedOrigin, async (req, res) => {
 });
 app.post("/api/customer/reset-password", trustedOrigin, async (req, res) => {
   const { resetToken, password, confirmPassword } = req.body || {};
-  if (typeof resetToken !== "string" || resetToken.length < 40 || resetToken.length > 100 || !validPassword(password) || !validPassword(confirmPassword) || password !== confirmPassword) return badJson(res, "Enter matching passwords with at least 10 characters.");
+  if (typeof resetToken !== "string" || resetToken.length < 40 || resetToken.length > 100 || !validPassword(password) || !validPassword(confirmPassword) || password !== confirmPassword) return badJson(res, "Enter matching passwords between 8 and 16 characters.");
   try {
     const tokenHash = hashResetToken(resetToken);
     const limits = await Promise.all([

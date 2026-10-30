@@ -17,7 +17,7 @@ const registrationSchema = z.object({
   identifier: customerAccountIdentifierSchema.optional(),
   email: z.string().trim().email().max(254).optional(),
   phone: customerPhoneSchema.optional(),
-  password: z.string().min(10).max(128),
+  password: z.string().min(8).max(16),
 }).superRefine(({ identifier, email, phone }, context) => {
   if ([identifier, email, phone].filter((value) => value !== undefined).length !== 1) {
     context.addIssue({
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Registration request must be valid JSON." }, { status: 400 });
   }
   const parsed = registrationSchema.safeParse(body);
-  if (!parsed.success) return NextResponse.json({ error: "Enter your name, either a valid email address or phone number, and a password of at least 10 characters." }, { status: 400 });
+  if (!parsed.success) return NextResponse.json({ error: "Enter your name, either a valid email address or phone number, and a password between 8 and 16 characters." }, { status: 400 });
 
   try {
     const input = parsed.data;
