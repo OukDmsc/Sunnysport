@@ -103,7 +103,47 @@ function providerFailure(provider: EmailProvider, response: Response): EmailDeli
   );
 }
 
-async function providerFetch(provider: EmailProvider, input: RequestInfo | URL, init: RequestInit) {
+function sanitizeInfobipErrorBody(value: unknown, otpCode: string): unknown {
+  const credentials: string[] = [];
+  for (const [name, credential] of Object.entries(process.env)) {
+    if (credential && /API.?KEY|SECRET|TOKEN|PASSWORD|CREDENTIAL|AUTH|USER|PRIVATE/i.test(name)) {
+      credentials.push(credential);
+    }
+  }
+
+  function sanitizeText(text: string) {
+    let sanitized = otpCode
+      ? text.replace(new RegExp(otpCode.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"), "[REDACTED]")
+      : text;
+    for (const credential of credentials) {
+      sanitized = sanitized.replace(new RegExp(credential.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"), "[REDACTED]");
+    }
+    return sanitized.replace(/\b(App|Bearer)\s+\S+/gi, "$1 [REDACTED]");
+  }
+
+  function sanitize(item: unknown): unknown {
+    if (typeof item === "string") return sanitizeText(item);
+    if (Array.isArray(item)) return item.map(sanitize);
+    if (typeof item === "object" && item !== null) {
+      return Object.fromEntries(Object.entries(item).map(([key, child]) => [
+        sanitizeText(key),
+        /API.?KEY|SECRET|TOKEN|PASSWORD|CREDENTIAL|AUTH|PRIVATE|OTP|VERIFICATION.?CODE|ONE.?TIME.?CODE/i.test(key)
+          ? "[REDACTED]"
+          : sanitize(child),
+      ]));
+    }
+    return item;
+  }
+
+  return sanitize(value);
+}
+
+async function providerFetch(
+  provider: EmailProvider,
+  input: RequestInfo | URL,
+  init: RequestInit,
+  onHttpError?: (response: Response) => Promise<void>,
+) {
   let response: Response;
   try {
     response = await fetch(input, init);
@@ -113,11 +153,14 @@ async function providerFetch(provider: EmailProvider, input: RequestInfo | URL, 
       : "network";
     throw new EmailDeliveryError(provider, reason);
   }
-  if (!response.ok) throw providerFailure(provider, response);
+  if (!response.ok) {
+    await onHttpError?.(response);
+    throw providerFailure(provider, response);
+  }
   return response;
 }
 
-async function ensureInfobipAccepted(response: Response) {
+async function ensureInfobipAccepted(response: Response, otpCode: string) {
   let result: unknown;
   try {
     result = await response.json();
@@ -139,6 +182,7 @@ async function ensureInfobipAccepted(response: Response) {
     || typeof result.messages[0].status.name !== "string"
     || !["PENDING_ACCEPTED", "MESSAGE_SENT"].includes(result.messages[0].status.name)
   ) {
+    console.error("Infobip email response was not accepted", sanitizeInfobipErrorBody(result, otpCode));
     throw new EmailDeliveryError("infobip", "rejected");
   }
 }
@@ -219,6 +263,17 @@ export async function sendOtpEmail(input: { to: string; name: string; code: stri
       }],
     }),
     signal: AbortSignal.timeout(10000),
+  }, async (errorResponse) => {
+    let responseBody: unknown;
+    try {
+      responseBody = await errorResponse.clone().json();
+    } catch {
+      responseBody = "[Unable to parse response body as JSON]";
+    }
+    console.error("Infobip email request rejected", {
+      status: errorResponse.status,
+      body: sanitizeInfobipErrorBody(responseBody, input.code),
+    });
   });
-  await ensureInfobipAccepted(response);
+  await ensureInfobipAccepted(response, input.code);
 }

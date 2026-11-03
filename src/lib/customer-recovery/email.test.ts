@@ -6,6 +6,7 @@ import {
 } from "./email";
 
 afterEach(() => {
+  vi.restoreAllMocks();
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
 });
@@ -90,5 +91,96 @@ describe("customer recovery email provider configuration", () => {
       provider: "resend",
       reason: "authentication",
     });
+  });
+
+  it("logs sanitized Infobip error details while preserving the delivery error", async () => {
+    const apiKey = "a-private-api-key-with-at-least-32-characters";
+    const otpCode = "123456";
+    const logError = vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.stubEnv("EMAIL_PROVIDER", "infobip");
+    vi.stubEnv("INFOBIP_FROM_EMAIL", "password-reset@sunny.test");
+    vi.stubEnv("INFOBIP_API_KEY", apiKey);
+    vi.stubEnv("INFOBIP_BASE_URL", "eewd32.api.infobip.com");
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      requestError: {
+        serviceException: {
+          text: `OTP ${otpCode} was rejected`,
+          apiKey,
+          authorization: `App ${apiKey}`,
+        },
+      },
+    }), { status: 422 })));
+
+    await expect(sendOtpEmail({
+      to: "customer@sunny.test",
+      name: "Test",
+      code: otpCode,
+    })).rejects.toMatchObject({
+      name: "EmailDeliveryError",
+      provider: "infobip",
+      reason: "rejected",
+      message: "Email delivery failed: rejected.",
+    });
+
+    expect(logError).toHaveBeenCalledOnce();
+    expect(logError).toHaveBeenCalledWith("Infobip email request rejected", {
+      status: 422,
+      body: {
+        requestError: {
+          serviceException: {
+            text: "OTP [REDACTED] was rejected",
+            apiKey: "[REDACTED]",
+            authorization: "[REDACTED]",
+          },
+        },
+      },
+    });
+    expect(JSON.stringify(logError.mock.calls)).not.toContain(apiKey);
+    expect(JSON.stringify(logError.mock.calls)).not.toContain(otpCode);
+  });
+
+  it("logs a sanitized successful-response body when Infobip does not accept the message", async () => {
+    const apiKey = "a-private-api-key-with-at-least-32-characters";
+    const otpCode = "654321";
+    const logError = vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.stubEnv("EMAIL_PROVIDER", "infobip");
+    vi.stubEnv("INFOBIP_FROM_EMAIL", "password-reset@sunny.test");
+    vi.stubEnv("INFOBIP_API_KEY", apiKey);
+    vi.stubEnv("INFOBIP_BASE_URL", "eewd32.api.infobip.com");
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      messages: [{
+        status: { name: "MESSAGE_REJECTED", description: `OTP ${otpCode} was rejected` },
+        apiKey,
+        secret: apiKey,
+        token: apiKey,
+        password: apiKey,
+        credentials: apiKey,
+      }],
+    }), { status: 200 })));
+
+    await expect(sendOtpEmail({
+      to: "customer@sunny.test",
+      name: "Test",
+      code: otpCode,
+    })).rejects.toMatchObject({
+      name: "EmailDeliveryError",
+      provider: "infobip",
+      reason: "rejected",
+      message: "Email delivery failed: rejected.",
+    });
+
+    expect(logError).toHaveBeenCalledOnce();
+    expect(logError).toHaveBeenCalledWith("Infobip email response was not accepted", {
+      messages: [{
+        status: { name: "MESSAGE_REJECTED", description: "OTP [REDACTED] was rejected" },
+        apiKey: "[REDACTED]",
+        secret: "[REDACTED]",
+        token: "[REDACTED]",
+        password: "[REDACTED]",
+        credentials: "[REDACTED]",
+      }],
+    });
+    expect(JSON.stringify(logError.mock.calls)).not.toContain(apiKey);
+    expect(JSON.stringify(logError.mock.calls)).not.toContain(otpCode);
   });
 });
