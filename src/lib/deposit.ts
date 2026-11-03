@@ -1,4 +1,4 @@
-import { BOOKING_DISCOUNT_CENTS } from "./booking";
+import { BOOKING_PRICE_CENTS } from "./booking";
 
 export const DEPOSIT_PERCENT = 10;
 
@@ -10,7 +10,7 @@ export function calculateDepositCents(totalCents: number) {
 }
 
 export function calculateBookingAmountDueCents(totalCents: number, bookingAdjustmentCents: number) {
-  return bookingAdjustmentCents === -BOOKING_DISCOUNT_CENTS
+  return bookingAdjustmentCents === -BOOKING_PRICE_CENTS
     ? totalCents
     : calculateDepositCents(totalCents);
 }

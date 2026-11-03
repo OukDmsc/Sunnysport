@@ -365,6 +365,54 @@ describe("customer password recovery", () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
+  it("rejects invalid email identifiers without looking up an account", async () => {
+    const response = await requestRecovery(postRequest("forgot-password", {
+      identifier: "not-an-email",
+      channel: "email",
+    }) as never);
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: "Enter a valid email address." });
+    expect(mocks.db.customerAccount.findFirst).not.toHaveBeenCalled();
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it.each(["", "too-short"])("does not start recovery when SESSION_SECRET is missing or invalid (%s)", async (secret) => {
+    vi.stubEnv("SESSION_SECRET", secret);
+
+    const response = await requestRecovery(postRequest("forgot-password", {
+      identifier: "customer@example.test",
+      channel: "email",
+    }) as never);
+
+    expect(response.status).toBe(503);
+    expect((await response.json()).error).toContain("SESSION_SECRET");
+    expect(mocks.db.customerAuthRateLimit.findUnique).not.toHaveBeenCalled();
+    expect(mocks.db.customerAccount.findFirst).not.toHaveBeenCalled();
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("returns a safe response and logs only safe metadata when the database is unavailable", async () => {
+    const connectionDetail = "postgresql://private-user:private-password@private-db.example.test/database";
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    mocks.db.customerAuthRateLimit.findUnique.mockRejectedValueOnce(new Error(connectionDetail));
+
+    const response = await requestRecovery(postRequest("forgot-password", {
+      identifier: "customer@example.test",
+      channel: "email",
+    }) as never);
+
+    expect(response.status).toBe(500);
+    expect(await response.json()).toEqual({ error: "Unable to process the recovery request right now." });
+    expect(JSON.stringify(consoleError.mock.calls)).not.toContain(connectionDetail);
+    expect(consoleError).toHaveBeenCalledWith(
+      "Customer recovery request could not be processed.",
+      { name: "Error" },
+    );
+    expect(mocks.db.customerAccount.findFirst).not.toHaveBeenCalled();
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
   it("requires a configured SMS provider and Cambodian phone format", async () => {
     const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const unavailable = await requestRecovery(postRequest("forgot-password", {
@@ -594,6 +642,29 @@ describe("customer password recovery", () => {
     expect(mocks.state.challenges).toHaveLength(1);
     expect(mocks.state.challenges[0].usedAt).toBeInstanceOf(Date);
     expect(mocks.state.challenges[0].emailCodeHash).toBe("");
+  });
+
+  it("invalidates the OTP and returns a safe response for a malformed provider response", async () => {
+    vi.stubEnv("EMAIL_PROVIDER", "infobip");
+    vi.stubEnv("INFOBIP_API_KEY", "a-private-api-key-with-at-least-32-characters");
+    vi.stubEnv("INFOBIP_BASE_URL", "eewd32.api.infobip.com");
+    vi.stubEnv("INFOBIP_FROM_EMAIL", "password-reset@sunny.test");
+    vi.mocked(fetch).mockResolvedValueOnce(new Response("not-json", { status: 200 }));
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const response = await requestRecovery(postRequest("forgot-password", {
+      identifier: "customer@example.test",
+      channel: "email",
+    }) as never);
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      message: "If an account matches the information provided, recovery instructions will be sent.",
+    });
+    expect(mocks.state.challenges[0].usedAt).toBeInstanceOf(Date);
+    expect(mocks.state.challenges[0].emailCodeHash).toBe("");
+    expect(JSON.stringify(consoleError.mock.calls)).not.toMatch(/\b\d{6}\b/);
+    expect(JSON.stringify(consoleError.mock.calls)).not.toContain("not-json");
   });
 
   it("verifies an OTP once, resets the password, revokes sessions, and rejects token reuse", async () => {

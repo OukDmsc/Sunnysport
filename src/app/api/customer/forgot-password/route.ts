@@ -16,6 +16,7 @@ import {
 } from "@/lib/customer-auth";
 import { getSmsProviderDiagnostics, OtpSmsDeliveryError } from "@/lib/customer-recovery/sms";
 import { db } from "@/lib/db";
+import { safeErrorDetails } from "@/lib/safe-error";
 
 const requestSchema = z.object({
   identifier: z.string().trim().min(3).max(254),
@@ -122,8 +123,8 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ message: genericMessage });
-  } catch {
-    console.error("Customer recovery request could not be processed.");
+  } catch (error) {
+    console.error("Customer recovery request could not be processed.", safeErrorDetails(error));
     return NextResponse.json({ error: "Unable to process the recovery request right now." }, { status: 500 });
   }
 }

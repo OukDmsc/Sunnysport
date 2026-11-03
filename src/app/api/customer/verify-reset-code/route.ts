@@ -13,6 +13,7 @@ import {
   normalizeCustomerPhone,
 } from "@/lib/customer-auth";
 import { db } from "@/lib/db";
+import { safeErrorDetails } from "@/lib/safe-error";
 
 const verifySchema = z.object({
   identifier: z.string().trim().min(3).max(254),
@@ -113,8 +114,8 @@ export async function POST(request: NextRequest) {
     if (claimed.count !== 1) return NextResponse.json(invalidCode, { status: 400 });
 
     return NextResponse.json({ resetToken, expiresInSeconds: CUSTOMER_RESET_TOKEN_LIFETIME_MS / 1000 });
-  } catch {
-    console.error("Customer recovery code verification failed.");
+  } catch (error) {
+    console.error("Customer recovery code verification failed.", safeErrorDetails(error));
     return NextResponse.json({ error: "Unable to verify the recovery code right now." }, { status: 500 });
   }
 }

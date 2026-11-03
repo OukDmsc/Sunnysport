@@ -71,7 +71,7 @@ describe("Telegram notifications", () => {
     expect(message.text).toContain("⏰ Time: 6:00 PM - 8:00 PM");
     expect(message.text).toContain("👤 Customer: Dara Sok");
     expect(message.text).toContain("💰 Total: $26.22");
-    expect(message.text).toContain("💳 Deposit: $2.63");
+    expect(message.text).toContain("💳 Amount due: $2.63");
     expect(message.text).toContain("💵 Remaining: $23.59");
     expect(message.text).toContain("🆔 Booking ID: #FB20261026ABC123");
     expect(message.text).toContain("💳 Payment: PENDING");
@@ -117,5 +117,36 @@ describe("Telegram notifications", () => {
 
   it("creates reference numbers using the expected prefix", () => {
     expect(bookingReference()).toMatch(/^FB\d{8}[A-F0-9]{6}$/);
+  });
+
+  it("reports the fixed booking price and full amount due for new bookings", () => {
+    const flatPriceBooking = {
+      ...booking,
+      totalCents: 250,
+      bookingFeeCents: -250,
+    };
+
+    expect(formatNewBookingNotification(flatPriceBooking)).toContain("💰 Total: $2.50");
+    expect(formatNewBookingNotification(flatPriceBooking)).toContain("💳 Amount due: $2.50");
+  });
+
+  it("reports the fixed price in admin notifications without a rental discount breakdown", async () => {
+    vi.stubEnv("TELEGRAM_BOT_TOKEN", "test-token");
+    vi.stubEnv("TELEGRAM_GROUP_CHAT_ID", "-1001234567890");
+    const fetch = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response('{"ok":true}', { status: 200 }));
+    const flatPriceBooking = {
+      ...booking,
+      totalCents: 250,
+      bookingFeeCents: -250,
+    };
+
+    await expect(notifyAdmin(flatPriceBooking, "NEW FOOTBALL FIELD BOOKING")).resolves.toEqual({ delivered: true });
+
+    const message = JSON.parse(String(fetch.mock.calls[0][1]?.body));
+    expect(message.text).toContain("Booking price: $2.50");
+    expect(message.text).toContain("Total: $2.50");
+    expect(message.text).toContain("Amount due/received: $2.50");
+    expect(message.text).not.toContain("Court rental:");
+    expect(message.text).not.toContain("Booking discount:");
   });
 });

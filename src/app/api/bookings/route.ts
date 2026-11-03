@@ -4,9 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { bookingReference, notifyNewBooking } from "@/lib/notifications";
 import {
-  BOOKING_DISCOUNT_CENTS,
-  calculateFinalBookingTotalCents,
-  calculateTotalCents,
+  BOOKING_PRICE_CENTS,
   getBookingTimes,
 } from "@/lib/booking";
 import { bookingInputSchema, isValidBookingDate } from "@/lib/validation";
@@ -61,9 +59,8 @@ export async function POST(request: NextRequest) {
     const rateSetting = await db.setting.findUnique({ where: { key: "usdToKhrRate" } });
     const { slots, endTime } = getBookingTimes(input.startTime, input.duration);
     const usdToKhrRate = Number(rateSetting?.value ?? process.env.USD_TO_KHR_RATE ?? "4100");
-    const rentalCents = calculateTotalCents(field.hourlyRateCents, input.duration);
-    const bookingFeeCents = -BOOKING_DISCOUNT_CENTS;
-    const totalCents = calculateFinalBookingTotalCents(rentalCents);
+    const bookingFeeCents = -BOOKING_PRICE_CENTS;
+    const totalCents = BOOKING_PRICE_CENTS;
     const customerAccessToken = createCustomerBookingAccessToken();
     const reference = bookingReference();
     const dynamicKhqr = await createBookingKhqr({ reference, amountCents: totalCents, usdToKhrRate });
@@ -113,11 +110,11 @@ export async function POST(request: NextRequest) {
         khqrAmount: dynamicKhqr?.amount ?? null,
         qrExpiresAt: dynamicKhqr?.expiresAt ?? null,
         amountCents: totalCents,
-        bookingDiscountCents: BOOKING_DISCOUNT_CENTS,
+        bookingPriceCents: BOOKING_PRICE_CENTS,
         bookingFeeCents: booking.bookingFeeCents,
         instructions: dynamicKhqr
-          ? "The full booking total, after the $2.50 discount, is encoded in this KHQR."
-          : process.env.KHQR_PAYMENT_INSTRUCTIONS ?? "Pay the full booking total after the $2.50 discount using KHQR. Include your booking reference.",
+          ? "The full $2.50 booking price is encoded in this KHQR."
+          : process.env.KHQR_PAYMENT_INSTRUCTIONS ?? "Pay the $2.50 booking price using KHQR. Include your booking reference.",
       },
       notification,
     }, { status: 201 });
@@ -130,9 +127,6 @@ export async function POST(request: NextRequest) {
     }
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       return NextResponse.json({ error: "That time was just booked. Please select another slot.", errorCode: "BOOKING_SLOT_CONFLICT" }, { status: 409 });
-    }
-    if (error instanceof Error && /Court rental must/.test(error.message)) {
-      return NextResponse.json({ error: error.message, errorCode: "INVALID_BOOKING_PRICE" }, { status: 400 });
     }
     if (error instanceof Error && /Bookings must|Choose a valid/.test(error.message)) {
       return NextResponse.json({ error: error.message, errorCode: "INVALID_BOOKING_TIME" }, { status: 400 });

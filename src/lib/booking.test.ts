@@ -1,9 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
-  BOOKING_DISCOUNT_CENTS,
+  BOOKING_PRICE_CENTS,
   BOOKING_DURATION_HOURS,
   PLAYING_HOURS,
-  calculateFinalBookingTotalCents,
   calculateTotalCents,
   getBookingTimes,
   overlaps,
@@ -37,12 +36,6 @@ describe("booking time and price rules", () => {
   it("calculates the total in cents without floating point rounding", () => {
     const rentalTotal = calculateTotalCents(2500, BOOKING_DURATION_HOURS);
     expect(rentalTotal).toBe(5000);
-    expect(calculateFinalBookingTotalCents(rentalTotal)).toBe(4750);
-    expect(BOOKING_DISCOUNT_CENTS).toBe(250);
-  });
-
-  it("rejects rental prices that cannot cover the flat booking discount", () => {
-    expect(() => calculateFinalBookingTotalCents(250)).toThrow(/more than the \$2.50/);
-    expect(() => calculateFinalBookingTotalCents(249)).toThrow(/more than the \$2.50/);
+    expect(BOOKING_PRICE_CENTS).toBe(250);
   });
 });

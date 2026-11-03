@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { hasTrustedOrigin } from "@/lib/auth";
 import { consumeCustomerAuthRateLimit, hashCustomerPassword, hashCustomerResetToken } from "@/lib/customer-auth";
 import { db } from "@/lib/db";
+import { safeErrorDetails } from "@/lib/safe-error";
 
 const resetSchema = z.object({
   resetToken: z.string().min(40).max(100),
@@ -74,8 +75,8 @@ export async function POST(request: NextRequest) {
     if (!changed) return NextResponse.json(invalidToken, { status: 400 });
 
     return NextResponse.json({ passwordReset: true });
-  } catch {
-    console.error("Customer password reset could not be completed.");
+  } catch (error) {
+    console.error("Customer password reset could not be completed.", safeErrorDetails(error));
     return NextResponse.json({ error: "Unable to reset the customer password right now." }, { status: 500 });
   }
 }

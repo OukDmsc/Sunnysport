@@ -55,7 +55,7 @@ A responsive, bilingual (English and Khmer) booking and admin application for a 
 
 - Customer account creation and sign-in with a name, password, and either an email address or phone number.
 - Only an authenticated administrator can permanently delete a selected booking from the admin Bookings or Payments table. Deletion is irreversible and removes the booking plus its linked time slots and customer booking-access token; it does not delete the customer account or unrelated bookings. Customer "Clear history" only hides history from that device.
-- Password recovery sends a short-lived code to the email address or phone number entered; configure SMTP for email and Twilio for phone recovery.
+- Password recovery sends a short-lived code to the email address or phone number entered; configure Resend, SMTP, or Infobip for email and Infobip or Twilio for SMS.
 - Authenticated booking form with field, Cambodia-local future date, 30-minute start-time choices from 7:00 AM to 6:00 PM, a fixed two-hour duration, customer details from the account, notes, and live totals. Online booking is accepted at any time.
 - Admin field management supports adding fields, changing each hourly rental rate to cent precision (for example, $20.50/hour), and removing/restoring fields from public booking without deleting historical reservations.
 - Each new two-hour booking receives a flat $2.50 discount from the full court-rental price; no booking fee or percentage deposit is added. Customers pay the full discounted total.

@@ -8,3 +8,14 @@ export function withPgBouncerForTransactionPooler(connectionString: string) {
     return connectionString;
   }
 }
+
+export function getRuntimeDatasourceUrl(
+  nodeEnvironment: string | undefined,
+  databaseUrl: string | undefined,
+) {
+  if (nodeEnvironment === "development") return "file:./dev.db";
+  if (nodeEnvironment === "production" && databaseUrl) {
+    return withPgBouncerForTransactionPooler(databaseUrl);
+  }
+  return undefined;
+}

@@ -14,7 +14,8 @@ describe("booking deposit", () => {
     expect(() => calculateDepositCents(1.5)).toThrow("Invalid booking total.");
   });
 
-  it("uses full payment for new discounted bookings and preserves legacy deposit amounts", () => {
+  it("requires full payment for flat-price bookings and preserves legacy deposit amounts", () => {
+    expect(calculateBookingAmountDueCents(250, -250)).toBe(250);
     expect(calculateBookingAmountDueCents(4750, -250)).toBe(4750);
     expect(calculateBookingAmountDueCents(25000, 0)).toBe(2500);
     expect(calculateBookingAmountDueCents(2622, 122)).toBe(263);

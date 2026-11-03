@@ -1,7 +1,8 @@
 import type { Booking, Field } from "@prisma/client";
 import { randomUUID } from "node:crypto";
+import { BOOKING_PRICE_CENTS } from "./booking";
 import { formatTime } from "./time";
-import { calculateBookingAmountDueCents, calculateDepositCents } from "./deposit";
+import { calculateBookingAmountDueCents } from "./deposit";
 
 type BookingWithField = Booking & { field: Field };
 
@@ -54,8 +55,8 @@ export async function sendTelegramMessage(text: string) {
 }
 
 export function formatNewBookingNotification(booking: BookingWithField) {
-  const depositCents = calculateDepositCents(booking.totalCents);
-  const remainingCents = booking.totalCents - depositCents;
+  const amountDueCents = calculateBookingAmountDueCents(booking.totalCents, booking.bookingFeeCents);
+  const remainingCents = booking.totalCents - amountDueCents;
   return [
     "🔔 NEW BOOKING",
     "",
@@ -67,7 +68,7 @@ export function formatNewBookingNotification(booking: BookingWithField) {
     `📞 Phone: ${booking.phone}`,
     "",
     `💰 Total: $${(booking.totalCents / 100).toFixed(2)}`,
-    `💳 Deposit: $${(depositCents / 100).toFixed(2)}`,
+    `💳 Amount due: $${(amountDueCents / 100).toFixed(2)}`,
     `💵 Remaining: $${(remainingCents / 100).toFixed(2)}`,
     "",
     `💳 Payment: ${booking.paymentStatus}`,
@@ -84,8 +85,12 @@ export async function notifyAdmin(booking: BookingWithField, event: string) {
   const amountDue = booking.paymentStatus === "PAID"
     ? booking.amountPaidCents
     : calculateBookingAmountDueCents(booking.totalCents, booking.bookingFeeCents);
+  const flatPriceBooking = booking.totalCents === BOOKING_PRICE_CENTS
+    && booking.bookingFeeCents === -BOOKING_PRICE_CENTS;
   const rentalCents = booking.totalCents - booking.bookingFeeCents;
-  const adjustmentLine = booking.bookingFeeCents < 0
+  const adjustmentLine = flatPriceBooking
+    ? null
+    : booking.bookingFeeCents < 0
     ? `Booking discount: $${(Math.abs(booking.bookingFeeCents) / 100).toFixed(2)}`
     : booking.bookingFeeCents > 0
       ? `Legacy booking fee: $${(booking.bookingFeeCents / 100).toFixed(2)}`
@@ -98,7 +103,8 @@ export async function notifyAdmin(booking: BookingWithField, event: string) {
     `Field: ${booking.field.name}`,
     `Date: ${booking.date}`,
     `Time: ${formatTime(booking.startTime)} - ${formatTime(booking.endTime)}`,
-    `Court rental: $${(rentalCents / 100).toFixed(2)}`,
+    ...(flatPriceBooking ? [] : [`Court rental: $${(rentalCents / 100).toFixed(2)}`]),
+    ...(flatPriceBooking ? ["Booking price: $2.50"] : []),
     ...(adjustmentLine ? [adjustmentLine] : []),
     `Total: $${(booking.totalCents / 100).toFixed(2)}`,
     `Amount due/received: $${(amountDue / 100).toFixed(2)}`,

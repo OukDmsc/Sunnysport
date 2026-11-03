@@ -1,7 +1,7 @@
 export const SLOT_MINUTES = 30;
 export const PLAYING_HOURS = "07:00-20:00";
 export const BOOKING_DURATION_HOURS = 2;
-export const BOOKING_DISCOUNT_CENTS = 250;
+export const BOOKING_PRICE_CENTS = 250;
 
 export function getBookingTimes(startTime: string, duration: number) {
   const match = /^([01]\d|2[0-3]):(00|30)$/.exec(startTime);
@@ -36,11 +36,4 @@ export function calculateTotalCents(hourlyRateCents: number, duration: number) {
     throw new Error("Invalid price or duration.");
   }
   return hourlyRateCents * duration;
-}
-
-export function calculateFinalBookingTotalCents(rentalCents: number) {
-  if (!Number.isSafeInteger(rentalCents) || rentalCents <= BOOKING_DISCOUNT_CENTS) {
-    throw new Error("Court rental must be more than the $2.50 booking discount.");
-  }
-  return rentalCents - BOOKING_DISCOUNT_CENTS;
 }
