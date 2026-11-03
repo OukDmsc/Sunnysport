@@ -47,8 +47,28 @@ for (const variableName of ["DATABASE_URL", "DIRECT_URL"]) {
   }
 
   let port = "unknown";
+  let prismaConnectionString = connectionString;
   try {
-    port = new URL(connectionString).port || "default";
+    const url = new URL(connectionString);
+    if (url.protocol !== "postgres:" && url.protocol !== "postgresql:") {
+      console.error(`PostgreSQL preflight failed: ${variableName} must use a PostgreSQL URL.`);
+      failed = true;
+      continue;
+    }
+    port = url.port || "default";
+    if (variableName === "DATABASE_URL") {
+      if (port !== "6543") {
+        console.error("PostgreSQL preflight failed: production DATABASE_URL must use the Supabase transaction pooler on port 6543.");
+        failed = true;
+        continue;
+      }
+      url.searchParams.set("pgbouncer", "true");
+      prismaConnectionString = url.toString();
+    } else if (port === "6543" || url.searchParams.get("pgbouncer")?.toLowerCase() === "true") {
+      console.error("PostgreSQL preflight failed: DIRECT_URL must use a direct or session connection for Prisma migrations.");
+      failed = true;
+      continue;
+    }
   } catch {
     console.error(`PostgreSQL preflight failed: ${variableName} is not a valid URL.`);
     failed = true;
@@ -57,7 +77,7 @@ for (const variableName of ["DATABASE_URL", "DIRECT_URL"]) {
   console.log(`${variableName} is configured; port=${port}.`);
 
   const prisma = new PrismaClient({
-    datasources: { db: { url: connectionString } },
+    datasources: { db: { url: prismaConnectionString } },
   });
 
   try {

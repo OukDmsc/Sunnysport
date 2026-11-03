@@ -5,6 +5,7 @@ import { notifyAdmin } from "@/lib/notifications";
 import { BOOKING_DURATION_HOURS, getBookingTimes } from "@/lib/booking";
 import { isValidBookingDate } from "@/lib/validation";
 import { hasTrustedOrigin, isAdminRequest, unauthorized } from "@/lib/auth";
+import { safeErrorDetails } from "@/lib/safe-error";
 
 export async function DELETE(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   if (!hasTrustedOrigin(request)) return NextResponse.json({ error: "Request origin not allowed." }, { status: 403 });
@@ -32,7 +33,7 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
     if (error instanceof Error && error.message === "BOOKING_DELETE_CONFLICT") {
       return NextResponse.json({ error: "This booking changed while you were deleting it. Refresh and try again." }, { status: 409 });
     }
-    console.error("Booking deletion failed:", error);
+    console.error("Booking deletion failed.", safeErrorDetails(error));
     return NextResponse.json({ error: "Unable to delete booking history." }, { status: 500 });
   }
 }
@@ -113,7 +114,7 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
     if (error instanceof Error && /Bookings must|Choose a valid/.test(error.message)) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
-    console.error("Booking update failed:", error);
+    console.error("Booking update failed.", safeErrorDetails(error));
     return NextResponse.json({ error: "Unable to update booking." }, { status: 500 });
   }
 }

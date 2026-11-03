@@ -257,6 +257,23 @@ describe("customer password recovery", () => {
     expect(login.status).toBe(200);
   });
 
+  it("does not create an account when the session secret is invalid", async () => {
+    vi.stubEnv("SESSION_SECRET", "too-short");
+
+    const response = await registerCustomer(postRequest("customer/register", {
+      name: "Unavailable Session",
+      email: "unavailable-session@example.test",
+      password: "12345678",
+    }, "203.0.113.34") as never);
+
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({
+      error: "Customer account registration is temporarily unavailable.",
+    });
+    expect(mocks.db.customerAccount.create).not.toHaveBeenCalled();
+    expect(mocks.state.accounts).toHaveLength(1);
+  });
+
   it("accepts any password from 8 through 16 characters during registration", async () => {
     const minimumLength = await registerCustomer(postRequest("customer/register", {
       name: "Minimum Password",
@@ -349,6 +366,7 @@ describe("customer password recovery", () => {
   });
 
   it("requires a configured SMS provider and Cambodian phone format", async () => {
+    const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const unavailable = await requestRecovery(postRequest("forgot-password", {
       identifier: "+85512345678",
       channel: "phone",
@@ -367,6 +385,14 @@ describe("customer password recovery", () => {
     }) as never);
     expect(invalidPhone.status).toBe(400);
     expect(fetch).not.toHaveBeenCalled();
+    expect(consoleWarn).toHaveBeenCalledWith("[OTP SMS] Configuration unavailable.", expect.objectContaining({
+      provider: "infobip",
+      phoneNormalized: true,
+      sessionSecretConfigured: true,
+      baseUrlConfigured: false,
+      apiKeyConfigured: false,
+      senderConfigured: false,
+    }));
   });
 
   it("reports missing email provider environment variable names without exposing secret values", async () => {
@@ -435,6 +461,7 @@ describe("customer password recovery", () => {
     vi.stubEnv("INFOBIP_BASE_URL", "eewd32.api.infobip.com");
     vi.stubEnv("INFOBIP_SENDER", "SUNNYSPORT");
     vi.mocked(fetch).mockRejectedValueOnce(new Error("network timeout"));
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
 
     const response = await requestRecovery(postRequest("forgot-password", {
       identifier: "012 345 678",
@@ -443,18 +470,42 @@ describe("customer password recovery", () => {
 
     expect(response.status).toBe(200);
     const body = await response.json();
+    expect(body).toEqual({
+      message: "If an account matches the information provided, recovery instructions will be sent.",
+    });
     expect(body).not.toHaveProperty("code");
     expect(JSON.stringify(body)).not.toContain("network timeout");
     expect(mocks.state.challenges).toHaveLength(1);
     expect(mocks.state.challenges[0].usedAt).toBeInstanceOf(Date);
     expect(mocks.state.challenges[0].phoneCodeHash).toBe("");
+    expect(consoleError).toHaveBeenCalledWith("[OTP SMS] Delivery failed.", expect.objectContaining({
+      provider: "infobip",
+      phoneNormalized: true,
+      baseUrlConfigured: true,
+      apiKeyConfigured: true,
+      senderConfigured: true,
+      errorCode: "PROVIDER_UNREACHABLE",
+    }));
   });
 
-  it("invalidates the OTP when Infobip rejects the SMS request", async () => {
+  it("reports safe Infobip rejection details and invalidates the OTP", async () => {
     vi.stubEnv("INFOBIP_API_KEY", "a-private-api-key-with-at-least-32-characters");
     vi.stubEnv("INFOBIP_BASE_URL", "eewd32.api.infobip.com");
     vi.stubEnv("INFOBIP_SENDER", "SUNNYSPORT");
-    vi.mocked(fetch).mockResolvedValueOnce(new Response("provider error details", { status: 401 }));
+    const apiKey = "a-private-api-key-with-at-least-32-characters";
+    vi.mocked(fetch).mockImplementationOnce(async (_input, init) => {
+      const requestText = String(JSON.parse(String(init?.body)).messages[0].content.text);
+      const otp = requestText.match(/\b\d{6}\b/)?.[0] ?? "";
+      return Response.json({
+        requestError: {
+          serviceException: {
+            messageId: "BAD_SENDER",
+            text: `Invalid recipient +85512345678; attempted code ${otp}; key ${apiKey}`,
+          },
+        },
+      }, { status: 401 });
+    });
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
 
     const response = await requestRecovery(postRequest("forgot-password", {
       identifier: "012 345 678",
@@ -463,10 +514,46 @@ describe("customer password recovery", () => {
 
     expect(response.status).toBe(200);
     const body = await response.json();
+    expect(body).toEqual({
+      message: "If an account matches the information provided, recovery instructions will be sent.",
+    });
     expect(body).not.toHaveProperty("code");
-    expect(JSON.stringify(body)).not.toContain("provider error details");
     expect(mocks.state.challenges[0].usedAt).toBeInstanceOf(Date);
     expect(mocks.state.challenges[0].phoneCodeHash).toBe("");
+    const logText = JSON.stringify(consoleError.mock.calls);
+    expect(logText).toContain('"httpStatus":401');
+    expect(logText).toContain("BAD_SENDER");
+    expect(logText).toContain("Invalid recipient");
+    expect(logText).not.toContain(apiKey);
+    expect(logText).not.toContain("85512345678");
+    expect(logText).not.toMatch(/\b\d{6}\b/);
+  });
+
+  it("keeps SMS delivery failures generic and permits retry", async () => {
+    vi.stubEnv("INFOBIP_API_KEY", "a-private-api-key-with-at-least-32-characters");
+    vi.stubEnv("INFOBIP_BASE_URL", "eewd32.api.infobip.com");
+    vi.stubEnv("INFOBIP_SENDER", "SUNNYSPORT");
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.mocked(fetch).mockRejectedValueOnce(new Error("network timeout"));
+
+    const failed = await requestRecovery(postRequest("forgot-password", {
+      identifier: "012 345 678",
+      channel: "phone",
+    }) as never);
+    expect(failed.status).toBe(200);
+    expect(await failed.json()).toEqual({
+      message: "If an account matches the information provided, recovery instructions will be sent.",
+    });
+
+    const retry = await requestRecovery(postRequest("forgot-password", {
+      identifier: "012 345 678",
+      channel: "phone",
+    }, "203.0.113.22") as never);
+    expect(retry.status).toBe(200);
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(mocks.state.challenges).toHaveLength(2);
+    expect(mocks.state.challenges[0].usedAt).toBeInstanceOf(Date);
+    expect(mocks.state.challenges[1].usedAt).toBeNull();
   });
 
   it("sends email recovery through Infobip with server-side authorization", async () => {
@@ -670,7 +757,19 @@ describe("customer password recovery", () => {
       code,
     }) as never);
     expect(response.status).toBe(400);
-    expect(await response.json()).not.toHaveProperty("resetToken");
+    expect(await response.json()).toEqual({ error: "The recovery code has expired. Request a new one." });
+  });
+
+  it("distinguishes an incorrect OTP from an expired OTP", async () => {
+    await requestEmailCode();
+    const response = await verifyRecoveryCode(postRequest("customer/verify-reset-code", {
+      identifier: "customer@example.test",
+      channel: "email",
+      code: "000000",
+    }) as never);
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: "The recovery code is incorrect." });
+    expect(mocks.state.challenges[0].attemptCount).toBe(1);
   });
 
   it("rate-limits OTP resends by account and invalidates earlier codes", async () => {

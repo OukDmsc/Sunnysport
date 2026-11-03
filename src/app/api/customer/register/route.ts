@@ -1,16 +1,17 @@
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { NextRequest, NextResponse } from "next/server";
-import { createCustomerToken, hasTrustedOrigin, setCustomerCookie } from "@/lib/auth";
+import { createCustomerToken, hasTrustedOrigin, isSessionSecretValid, setCustomerCookie } from "@/lib/auth";
 import {
+  consumeCustomerAuthRateLimit,
   customerAccountIdentifierSchema,
   customerPhoneSchema,
   hashCustomerPassword,
-  isCustomerAuthRateLimited,
   normalizeCustomerEmail,
   normalizeCustomerPhone,
 } from "@/lib/customer-auth";
 import { db } from "@/lib/db";
+import { safeErrorDetails } from "@/lib/safe-error";
 
 const registrationSchema = z.object({
   name: z.string().trim().min(2).max(80),
@@ -31,9 +32,6 @@ const registrationSchema = z.object({
 export async function POST(request: NextRequest) {
   if (!hasTrustedOrigin(request)) return NextResponse.json({ error: "Request origin not allowed." }, { status: 403 });
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-  if (isCustomerAuthRateLimited("register", ip, 5, 15 * 60 * 1000)) {
-    return NextResponse.json({ error: "Too many account creation attempts. Try again later." }, { status: 429 });
-  }
   let body: unknown;
   try {
     body = await request.json();
@@ -42,8 +40,15 @@ export async function POST(request: NextRequest) {
   }
   const parsed = registrationSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "Enter your name, either a valid email address or phone number, and a password between 8 and 16 characters." }, { status: 400 });
+  if (!isSessionSecretValid()) {
+    console.error("[Customer registration] Session configuration unavailable.");
+    return NextResponse.json({ error: "Customer account registration is temporarily unavailable." }, { status: 503 });
+  }
 
   try {
+    if (await consumeCustomerAuthRateLimit("register", ip, 5, 15 * 60 * 1000)) {
+      return NextResponse.json({ error: "Too many account creation attempts. Try again later." }, { status: 429 });
+    }
     const input = parsed.data;
     const contact = input.identifier ?? input.email ?? input.phone;
     if (!contact) {
@@ -65,9 +70,18 @@ export async function POST(request: NextRequest) {
     return response;
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      const target = error.meta?.target;
+      const fields = Array.isArray(target) ? target : typeof target === "string" ? [target] : [];
+      const targetText = fields.join(" ").toLowerCase();
+      if (targetText.includes("email")) {
+        return NextResponse.json({ error: "An account with this email already exists." }, { status: 409 });
+      }
+      if (targetText.includes("phone")) {
+        return NextResponse.json({ error: "An account with this phone number already exists." }, { status: 409 });
+      }
       return NextResponse.json({ error: "An account already uses that email address or phone number." }, { status: 409 });
     }
-    console.error("Customer registration failed:", error);
+    console.error("Customer registration failed.", safeErrorDetails(error));
     return NextResponse.json({ error: "Unable to create the customer account." }, { status: 500 });
   }
 }

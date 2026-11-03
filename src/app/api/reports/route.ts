@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { isAdminRequest, unauthorized } from "@/lib/auth";
+import { safeErrorDetails } from "@/lib/safe-error";
 
 export async function GET(request: NextRequest) {
   if (!(await isAdminRequest(request))) return unauthorized();
@@ -22,15 +23,20 @@ export async function GET(request: NextRequest) {
   const key = (date: Date) => `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(date.getUTCDate()).padStart(2, "0")}`;
   const startDate = key(start);
   const endDate = key(today);
-  const bookings = await db.booking.findMany({ where: { date: { gte: startDate, lte: endDate } } });
-  const revenueCents = bookings
-    .filter((booking) => booking.paymentStatus === "PAID")
-    .reduce((sum, booking) => sum + booking.amountPaidCents, 0);
-  return NextResponse.json({
-    period,
-    startDate,
-    bookingCount: bookings.length,
-    revenueCents,
-    pendingPayments: bookings.filter((booking) => booking.paymentStatus === "PENDING").length,
-  });
+  try {
+    const bookings = await db.booking.findMany({ where: { date: { gte: startDate, lte: endDate } } });
+    const revenueCents = bookings
+      .filter((booking) => booking.paymentStatus === "PAID")
+      .reduce((sum, booking) => sum + booking.amountPaidCents, 0);
+    return NextResponse.json({
+      period,
+      startDate,
+      bookingCount: bookings.length,
+      revenueCents,
+      pendingPayments: bookings.filter((booking) => booking.paymentStatus === "PENDING").length,
+    });
+  } catch (error) {
+    console.error("Booking report could not be loaded.", safeErrorDetails(error));
+    return NextResponse.json({ error: "Unable to load the booking report." }, { status: 500 });
+  }
 }

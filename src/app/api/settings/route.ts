@@ -6,6 +6,7 @@ import { hasCustomerRecoveryConfiguration } from "@/lib/customer-auth";
 import { hasDynamicKhqrConfiguration, isDynamicKhqrConfigured } from "@/lib/khqr";
 import { PLAYING_HOURS } from "@/lib/booking";
 import { isTelegramConfigured } from "@/lib/notifications";
+import { safeErrorDetails } from "@/lib/safe-error";
 
 const settingsSchema = z.object({
   usdToKhrRate: z.number().int().min(1000).max(10000),
@@ -13,19 +14,24 @@ const settingsSchema = z.object({
 
 export async function GET(request: NextRequest) {
   if (!(await isAdminRequest(request))) return unauthorized();
-  const rows = await db.setting.findMany();
-  const saved = Object.fromEntries(rows.map((row) => [row.key, row.value]));
-  return NextResponse.json({
-    openingHours: PLAYING_HOURS,
-    usdToKhrRate: Number(saved.usdToKhrRate ?? process.env.USD_TO_KHR_RATE ?? "4100"),
-    paymentMode: "Manual KHQR — admin verification required",
-    telegramConfigured: isTelegramConfigured(),
-    khqrConfigured: Boolean(process.env.KHQR_IMAGE_URL || process.env.KHQR_PAYMENT_URL || isDynamicKhqrConfigured()),
-    khqrAmountPrefillConfigured: isDynamicKhqrConfigured(),
-    khqrDynamicConfigurationStarted: hasDynamicKhqrConfiguration(),
-    emailRecoveryConfigured: hasCustomerRecoveryConfiguration("email"),
-    phoneRecoveryConfigured: hasCustomerRecoveryConfiguration("phone"),
-  });
+  try {
+    const rows = await db.setting.findMany();
+    const saved = Object.fromEntries(rows.map((row) => [row.key, row.value]));
+    return NextResponse.json({
+      openingHours: PLAYING_HOURS,
+      usdToKhrRate: Number(saved.usdToKhrRate ?? process.env.USD_TO_KHR_RATE ?? "4100"),
+      paymentMode: "Manual KHQR — admin verification required",
+      telegramConfigured: isTelegramConfigured(),
+      khqrConfigured: Boolean(process.env.KHQR_IMAGE_URL || process.env.KHQR_PAYMENT_URL || isDynamicKhqrConfigured()),
+      khqrAmountPrefillConfigured: isDynamicKhqrConfigured(),
+      khqrDynamicConfigurationStarted: hasDynamicKhqrConfiguration(),
+      emailRecoveryConfigured: hasCustomerRecoveryConfiguration("email"),
+      phoneRecoveryConfigured: hasCustomerRecoveryConfiguration("phone"),
+    });
+  } catch (error) {
+    console.error("Settings could not be loaded.", safeErrorDetails(error));
+    return NextResponse.json({ error: "Unable to load settings." }, { status: 500 });
+  }
 }
 
 export async function PUT(request: NextRequest) {
@@ -38,7 +44,10 @@ export async function PUT(request: NextRequest) {
     ]);
     return NextResponse.json({ ok: true });
   } catch (error) {
-    console.error("Settings update failed:", error);
-    return NextResponse.json({ error: "Settings were invalid or could not be saved." }, { status: 400 });
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: "Settings were invalid." }, { status: 400 });
+    }
+    console.error("Settings update failed.", safeErrorDetails(error));
+    return NextResponse.json({ error: "Settings could not be saved." }, { status: 500 });
   }
 }

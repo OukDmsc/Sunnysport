@@ -6,6 +6,7 @@ import { getPaymentTransition, type PaymentAction } from "@/lib/payment";
 import { calculateBookingAmountDueCents } from "@/lib/deposit";
 import { hasTrustedOrigin, isAdminRequest, unauthorized } from "@/lib/auth";
 import { z } from "zod";
+import { safeErrorDetails } from "@/lib/safe-error";
 
 const paymentReviewSchema = z.discriminatedUnion("action", [
   z.object({
@@ -71,7 +72,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       return NextResponse.json({ error: "That bank transaction reference has already been used." }, { status: 409 });
     }
-    console.error("Payment review failed:", error);
+    console.error("Payment review failed.", safeErrorDetails(error));
     return NextResponse.json({ error: "Unable to update payment status." }, { status: 500 });
   }
 }

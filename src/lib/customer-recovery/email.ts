@@ -106,7 +106,7 @@ function providerFailure(provider: EmailProvider, response: Response): EmailDeli
 function sanitizeInfobipErrorBody(value: unknown, otpCode: string): unknown {
   const credentials: string[] = [];
   for (const [name, credential] of Object.entries(process.env)) {
-    if (credential && /API.?KEY|SECRET|TOKEN|PASSWORD|CREDENTIAL|AUTH|USER|PRIVATE/i.test(name)) {
+    if (credential && /API.?KEY|SECRET|TOKEN|PASSWORD|CREDENTIAL|AUTH|USER|PRIVATE|DATABASE_URL|DIRECT_URL|CONNECTION_STRING/i.test(name)) {
       credentials.push(credential);
     }
   }
@@ -118,7 +118,15 @@ function sanitizeInfobipErrorBody(value: unknown, otpCode: string): unknown {
     for (const credential of credentials) {
       sanitized = sanitized.replace(new RegExp(credential.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"), "[REDACTED]");
     }
-    return sanitized.replace(/\b(App|Bearer)\s+\S+/gi, "$1 [REDACTED]");
+    return sanitized
+      .replace(/\b(App|Bearer)\s+\S+/gi, "$1 [REDACTED]")
+      .replace(/\b[A-Za-z0-9_-]*(?:api[\s_-]?key|secret(?:[_-]?key)?|token|password|credential|authorization)\b\s*[:=]\s*["']?[^,\s"']+/gi, "[REDACTED]")
+      .replace(/\bpostgres(?:ql)?:\/\/[^\s"'<>]+/gi, "[REDACTED DATABASE URL]")
+      .replace(/\b\d{6}\b/g, "[REDACTED]")
+      .replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, "[REDACTED]")
+      .replace(/\+?\d[\d\s().-]{5,}\d/g, "[REDACTED]")
+      .replace(/[A-Za-z0-9+/_=-]{32,}/g, "[REDACTED]")
+      .slice(0, 200);
   }
 
   function sanitize(item: unknown): unknown {
@@ -136,6 +144,35 @@ function sanitizeInfobipErrorBody(value: unknown, otpCode: string): unknown {
   }
 
   return sanitize(value);
+}
+
+function infobipErrorDetails(body: unknown, otpCode: string) {
+  const sanitized = sanitizeInfobipErrorBody(body, otpCode);
+  if (typeof sanitized !== "object" || sanitized === null) return {};
+  const root = sanitized as Record<string, unknown>;
+  const requestError = typeof root.requestError === "object" && root.requestError !== null
+    ? root.requestError as Record<string, unknown>
+    : undefined;
+  const serviceException = typeof requestError?.serviceException === "object" && requestError.serviceException !== null
+    ? requestError.serviceException as Record<string, unknown>
+    : undefined;
+  const firstMessage = Array.isArray(root.messages) && typeof root.messages[0] === "object" && root.messages[0] !== null
+    ? root.messages[0] as Record<string, unknown>
+    : undefined;
+  const status = typeof firstMessage?.status === "object" && firstMessage.status !== null
+    ? firstMessage.status as Record<string, unknown>
+    : undefined;
+  const rawStatus = status?.name ?? status?.id ?? serviceException?.messageId;
+  const rawMessage = serviceException?.text ?? status?.description ?? requestError?.message ?? root.message;
+
+  return {
+    messageStatus: typeof rawStatus === "string" || typeof rawStatus === "number"
+      ? String(rawStatus).slice(0, 64)
+      : "UNAVAILABLE",
+    errorMessage: typeof rawMessage === "string"
+      ? rawMessage
+      : "Provider did not include an error message.",
+  };
 }
 
 async function providerFetch(
@@ -165,6 +202,11 @@ async function ensureInfobipAccepted(response: Response, otpCode: string) {
   try {
     result = await response.json();
   } catch {
+    console.error("Infobip email response was not accepted", {
+      httpStatus: response.status,
+      messageStatus: "INVALID_RESPONSE",
+      errorMessage: "Provider response was not valid JSON.",
+    });
     throw new EmailDeliveryError("infobip", "invalid-response");
   }
   if (
@@ -182,7 +224,10 @@ async function ensureInfobipAccepted(response: Response, otpCode: string) {
     || typeof result.messages[0].status.name !== "string"
     || !["PENDING_ACCEPTED", "MESSAGE_SENT"].includes(result.messages[0].status.name)
   ) {
-    console.error("Infobip email response was not accepted", sanitizeInfobipErrorBody(result, otpCode));
+    console.error("Infobip email response was not accepted", {
+      httpStatus: response.status,
+      ...infobipErrorDetails(result, otpCode),
+    });
     throw new EmailDeliveryError("infobip", "rejected");
   }
 }
@@ -268,11 +313,16 @@ export async function sendOtpEmail(input: { to: string; name: string; code: stri
     try {
       responseBody = await errorResponse.clone().json();
     } catch {
-      responseBody = "[Unable to parse response body as JSON]";
+      responseBody = null;
     }
     console.error("Infobip email request rejected", {
-      status: errorResponse.status,
-      body: sanitizeInfobipErrorBody(responseBody, input.code),
+      httpStatus: errorResponse.status,
+      ...(responseBody === null
+        ? {
+          messageStatus: "UNAVAILABLE",
+          errorMessage: "Provider response was not valid JSON.",
+        }
+        : infobipErrorDetails(responseBody, input.code)),
     });
   });
   await ensureInfobipAccepted(response, input.code);

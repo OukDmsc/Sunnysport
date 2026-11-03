@@ -20,6 +20,8 @@ const verifySchema = z.object({
   code: z.string().regex(/^\d{6}$/),
 });
 const invalidCode = { error: "The recovery code is invalid, expired, or already used." };
+const expiredCode = { error: "The recovery code has expired. Request a new one." };
+const incorrectCode = { error: "The recovery code is incorrect." };
 
 function requestIp(request: NextRequest) {
   return request.headers.get("x-forwarded-for")?.split(",")[0]?.trim().slice(0, 64) || "unknown";
@@ -68,33 +70,31 @@ export async function POST(request: NextRequest) {
         recoveryMethod: channel,
         usedAt: null,
         verifiedAt: null,
-        expiresAt: { gt: new Date() },
         attemptCount: { lt: 5 },
       },
       orderBy: { createdAt: "desc" },
     });
-    if (!challenge || !isCustomerAuthChallengeValid(challenge, code)) {
-      if (challenge) {
-        const now = new Date();
-        await db.customerAuthChallenge.updateMany({
-          where: {
-            id: challenge.id,
-            attemptCount: challenge.attemptCount,
-            usedAt: null,
-            verifiedAt: null,
-            expiresAt: { gt: now },
-          },
-          data: {
-            attemptCount: { increment: 1 },
-            ...(challenge.attemptCount >= 4 ? { usedAt: now } : {}),
-          },
-        });
-      }
-      return NextResponse.json(invalidCode, { status: 400 });
+    if (!challenge) return NextResponse.json(invalidCode, { status: 400 });
+    const now = new Date();
+    if (challenge.expiresAt <= now) return NextResponse.json(expiredCode, { status: 400 });
+    if (!isCustomerAuthChallengeValid(challenge, code)) {
+      await db.customerAuthChallenge.updateMany({
+        where: {
+          id: challenge.id,
+          attemptCount: challenge.attemptCount,
+          usedAt: null,
+          verifiedAt: null,
+          expiresAt: { gt: now },
+        },
+        data: {
+          attemptCount: { increment: 1 },
+          ...(challenge.attemptCount >= 4 ? { usedAt: now } : {}),
+        },
+      });
+      return NextResponse.json(incorrectCode, { status: 400 });
     }
 
     const resetToken = randomBytes(32).toString("base64url");
-    const now = new Date();
     const expiresAt = new Date(now.getTime() + CUSTOMER_RESET_TOKEN_LIFETIME_MS);
     const claimed = await db.customerAuthChallenge.updateMany({
       where: {

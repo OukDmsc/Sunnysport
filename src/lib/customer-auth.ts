@@ -200,6 +200,13 @@ export async function createCustomerAuthChallenge(
 ) {
   const code = generateCustomerRecoveryCode();
   const now = new Date();
+  await db.customerAuthChallenge.deleteMany({
+    where: {
+      expiresAt: { lt: now },
+      OR: [{ resetTokenExpiresAt: null }, { resetTokenExpiresAt: { lt: now } }],
+    },
+  });
+  await db.customerAuthRateLimit.deleteMany({ where: { resetAt: { lt: new Date(now.getTime() - 24 * 60 * 60 * 1000) } } });
   const challenge = await db.$transaction(async (tx) => {
     await tx.customerAuthChallenge.updateMany({
       where: { customerAccountId: customer.id, purpose: "PASSWORD_RESET", usedAt: null },
@@ -216,13 +223,6 @@ export async function createCustomerAuthChallenge(
       },
     });
   });
-  await db.customerAuthChallenge.deleteMany({
-    where: {
-      expiresAt: { lt: now },
-      OR: [{ resetTokenExpiresAt: null }, { resetTokenExpiresAt: { lt: now } }],
-    },
-  });
-  await db.customerAuthRateLimit.deleteMany({ where: { resetAt: { lt: new Date(now.getTime() - 24 * 60 * 60 * 1000) } } });
   return { challenge, code };
 }
 

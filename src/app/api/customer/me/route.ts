@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCustomerAccountFromRequest } from "@/lib/customer-auth";
+import { safeErrorDetails } from "@/lib/safe-error";
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,7 +11,7 @@ export async function GET(request: NextRequest) {
       customer: { id: customer.id, name: customer.name, email: customer.email, phone: customer.phone },
     });
   } catch (error) {
-    console.error("Customer session lookup failed:", error);
+    console.error("Customer session lookup failed.", safeErrorDetails(error));
     return NextResponse.json({ error: "Unable to check customer sign-in." }, { status: 500 });
   }
 }

@@ -14,17 +14,23 @@ import { createCustomerBookingAccessToken, hashCustomerBookingAccessToken } from
 import { hasTrustedOrigin, isAdminRequest, unauthorized } from "@/lib/auth";
 import { getCustomerAccountFromRequest } from "@/lib/customer-auth";
 import { createBookingKhqr, KhqrConfigurationError } from "@/lib/khqr";
+import { safeErrorDetails } from "@/lib/safe-error";
 
 export async function GET(request: NextRequest) {
   if (!(await isAdminRequest(request))) return unauthorized();
   const date = request.nextUrl.searchParams.get("date");
-  const bookings = await db.booking.findMany({
-    where: date ? { date } : {},
-    include: { field: true },
-    orderBy: [{ date: "desc" }, { startTime: "asc" }],
-    take: 500,
-  });
-  return NextResponse.json(bookings);
+  try {
+    const bookings = await db.booking.findMany({
+      where: date ? { date } : {},
+      include: { field: true },
+      orderBy: [{ date: "desc" }, { startTime: "asc" }],
+      take: 500,
+    });
+    return NextResponse.json(bookings);
+  } catch (error) {
+    console.error("Booking list could not be loaded.", safeErrorDetails(error));
+    return NextResponse.json({ error: "Unable to load bookings." }, { status: 500 });
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -67,7 +73,7 @@ export async function POST(request: NextRequest) {
       try {
         paymentQrDataUrl = await QRCode.toDataURL(legacyPaymentUrl, { errorCorrectionLevel: "M", margin: 1, width: 300 });
       } catch (error) {
-        console.error("PayWay payment QR generation failed:", error);
+        console.error("PayWay payment QR generation failed.", safeErrorDetails(error));
         return NextResponse.json({ error: "Unable to prepare the KHQR payment link. Please try again." }, { status: 500 });
       }
     }
@@ -131,7 +137,7 @@ export async function POST(request: NextRequest) {
     if (error instanceof Error && /Bookings must|Choose a valid/.test(error.message)) {
       return NextResponse.json({ error: error.message, errorCode: "INVALID_BOOKING_TIME" }, { status: 400 });
     }
-    console.error("Booking creation failed:", error);
+    console.error("Booking creation failed.", safeErrorDetails(error));
     return NextResponse.json({ error: "Unable to create booking. Please contact the club with this error code.", errorCode: "BOOKING_CREATE_FAILED" }, { status: 500 });
   }
 }

@@ -6,6 +6,7 @@ import { notifyAdmin } from "@/lib/notifications";
 import { canCustomerCancelBooking } from "@/lib/payment";
 import { hasTrustedOrigin } from "@/lib/auth";
 import { getCustomerAccountFromRequest, isCustomerAuthRateLimited } from "@/lib/customer-auth";
+import { safeErrorDetails } from "@/lib/safe-error";
 
 const customerBookingActionSchema = z.discriminatedUnion("action", [
   z.object({
@@ -110,7 +111,7 @@ export async function POST(request: NextRequest) {
     if (error instanceof Error && error.message === "CUSTOMER_CANCELLATION_CONFLICT") {
       return NextResponse.json({ error: "This booking was paid, cancelled, or changed. Refresh and try again." }, { status: 409 });
     }
-    console.error("Customer booking request failed:", error);
+    console.error("Customer booking request failed.", safeErrorDetails(error));
     return NextResponse.json({ error: "Unable to manage customer bookings." }, { status: 500 });
   }
 }

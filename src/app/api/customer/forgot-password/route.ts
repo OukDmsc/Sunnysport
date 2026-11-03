@@ -14,6 +14,7 @@ import {
   normalizeCustomerPhone,
   sendCustomerAuthCode,
 } from "@/lib/customer-auth";
+import { getSmsProviderDiagnostics, OtpSmsDeliveryError } from "@/lib/customer-recovery/sms";
 import { db } from "@/lib/db";
 
 const requestSchema = z.object({
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
           missing,
         });
       } else {
-        console.warn("Customer recovery SMS provider configuration is incomplete.");
+        console.warn("[OTP SMS] Configuration unavailable.", getSmsProviderDiagnostics(true));
       }
       const emailError = channel === "email"
         ? `Email recovery is not configured for ${emailDiagnostic?.provider ?? "an unknown provider"}. Set these server environment variables: ${[
@@ -107,10 +108,17 @@ export async function POST(request: NextRequest) {
           provider: error.provider,
           reason: error.reason,
         });
+        return NextResponse.json({ message: genericMessage });
+      } else if (error instanceof OtpSmsDeliveryError) {
+        console.error("[OTP SMS] Delivery failed.", error.diagnostics);
+        return NextResponse.json({ message: genericMessage });
       } else {
-        console.error("Customer recovery SMS delivery failed.");
+        console.error("[OTP SMS] Delivery failed.", {
+          provider: process.env.SMS_PROVIDER ?? "unset",
+          errorCode: "UNEXPECTED_DELIVERY_ERROR",
+        });
+        return NextResponse.json({ message: genericMessage });
       }
-      return NextResponse.json({ message: genericMessage });
     }
 
     return NextResponse.json({ message: genericMessage });

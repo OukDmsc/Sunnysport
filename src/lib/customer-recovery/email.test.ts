@@ -95,16 +95,19 @@ describe("customer recovery email provider configuration", () => {
 
   it("logs sanitized Infobip error details while preserving the delivery error", async () => {
     const apiKey = "a-private-api-key-with-at-least-32-characters";
+    const databaseUrl = "postgresql://private-user:private-password@db.example.test:5432/private";
     const otpCode = "123456";
     const logError = vi.spyOn(console, "error").mockImplementation(() => {});
     vi.stubEnv("EMAIL_PROVIDER", "infobip");
     vi.stubEnv("INFOBIP_FROM_EMAIL", "password-reset@sunny.test");
     vi.stubEnv("INFOBIP_API_KEY", apiKey);
     vi.stubEnv("INFOBIP_BASE_URL", "eewd32.api.infobip.com");
+    vi.stubEnv("DATABASE_URL", databaseUrl);
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
       requestError: {
         serviceException: {
-          text: `OTP ${otpCode} was rejected`,
+          messageId: "BAD_SENDER",
+          text: `OTP ${otpCode} was rejected with apiKey=${apiKey} database=${databaseUrl} access_token=private-token password=private-password`,
           apiKey,
           authorization: `App ${apiKey}`,
         },
@@ -124,23 +127,23 @@ describe("customer recovery email provider configuration", () => {
 
     expect(logError).toHaveBeenCalledOnce();
     expect(logError).toHaveBeenCalledWith("Infobip email request rejected", {
-      status: 422,
-      body: {
-        requestError: {
-          serviceException: {
-            text: "OTP [REDACTED] was rejected",
-            apiKey: "[REDACTED]",
-            authorization: "[REDACTED]",
-          },
-        },
-      },
+      httpStatus: 422,
+      messageStatus: "BAD_SENDER",
+      errorMessage: "OTP [REDACTED] was rejected with [REDACTED] database=[REDACTED] [REDACTED] [REDACTED]",
     });
     expect(JSON.stringify(logError.mock.calls)).not.toContain(apiKey);
     expect(JSON.stringify(logError.mock.calls)).not.toContain(otpCode);
+    expect(JSON.stringify(logError.mock.calls)).not.toContain(databaseUrl);
+    expect(JSON.stringify(logError.mock.calls)).not.toContain("private-token");
+    expect(JSON.stringify(logError.mock.calls)).not.toContain("private-password");
   });
 
   it("logs a sanitized successful-response body when Infobip does not accept the message", async () => {
     const apiKey = "a-private-api-key-with-at-least-32-characters";
+    const secret = "private-response-secret";
+    const token = "private-response-token";
+    const password = "private-response-password";
+    const credentials = "private-response-credential";
     const otpCode = "654321";
     const logError = vi.spyOn(console, "error").mockImplementation(() => {});
     vi.stubEnv("EMAIL_PROVIDER", "infobip");
@@ -151,10 +154,10 @@ describe("customer recovery email provider configuration", () => {
       messages: [{
         status: { name: "MESSAGE_REJECTED", description: `OTP ${otpCode} was rejected` },
         apiKey,
-        secret: apiKey,
-        token: apiKey,
-        password: apiKey,
-        credentials: apiKey,
+        secret,
+        token,
+        password,
+        credentials,
       }],
     }), { status: 200 })));
 
@@ -171,16 +174,15 @@ describe("customer recovery email provider configuration", () => {
 
     expect(logError).toHaveBeenCalledOnce();
     expect(logError).toHaveBeenCalledWith("Infobip email response was not accepted", {
-      messages: [{
-        status: { name: "MESSAGE_REJECTED", description: "OTP [REDACTED] was rejected" },
-        apiKey: "[REDACTED]",
-        secret: "[REDACTED]",
-        token: "[REDACTED]",
-        password: "[REDACTED]",
-        credentials: "[REDACTED]",
-      }],
+      httpStatus: 200,
+      messageStatus: "MESSAGE_REJECTED",
+      errorMessage: "OTP [REDACTED] was rejected",
     });
     expect(JSON.stringify(logError.mock.calls)).not.toContain(apiKey);
     expect(JSON.stringify(logError.mock.calls)).not.toContain(otpCode);
+    expect(JSON.stringify(logError.mock.calls)).not.toContain(secret);
+    expect(JSON.stringify(logError.mock.calls)).not.toContain(token);
+    expect(JSON.stringify(logError.mock.calls)).not.toContain(password);
+    expect(JSON.stringify(logError.mock.calls)).not.toContain(credentials);
   });
 });

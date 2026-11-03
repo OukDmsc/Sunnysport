@@ -4,9 +4,13 @@ import { NextRequest, NextResponse } from "next/server";
 const cookieName = "football_admin";
 const customerCookieName = "football_customer";
 
+export function isSessionSecretValid(value = process.env.SESSION_SECRET): value is string {
+  return typeof value === "string" && value.length >= 32;
+}
+
 function secret() {
   const value = process.env.SESSION_SECRET;
-  if (!value || value.length < 32) throw new Error("SESSION_SECRET must be configured with at least 32 characters.");
+  if (!isSessionSecretValid(value)) throw new Error("SESSION_SECRET must be configured with at least 32 characters.");
   return new TextEncoder().encode(value);
 }
 
@@ -53,7 +57,13 @@ export function setCustomerCookie(response: NextResponse, token: string) {
 }
 
 export function clearCustomerCookie(response: NextResponse) {
-  response.cookies.set(customerCookieName, "", { httpOnly: true, sameSite: "strict", path: "/", maxAge: 0 });
+  response.cookies.set(customerCookieName, "", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    path: "/",
+    maxAge: 0,
+  });
 }
 
 export async function isAdminRequest(request: NextRequest) {
@@ -78,7 +88,13 @@ export function setAdminCookie(response: NextResponse, token: string) {
 }
 
 export function clearAdminCookie(response: NextResponse) {
-  response.cookies.set(cookieName, "", { httpOnly: true, sameSite: "strict", path: "/", maxAge: 0 });
+  response.cookies.set(cookieName, "", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    path: "/",
+    maxAge: 0,
+  });
 }
 
 export function hasTrustedOrigin(request: NextRequest) {
